@@ -1,0 +1,45 @@
+{
+  "application": {
+    "last_finish": 1334052372,
+    "ran": true,
+    "steps": [
+      {
+        "ran": true,
+        "finished": false,
+        "name": "download"
+      },
+      {
+        "ran": false,
+        "finished": false,
+        "name": "es_load"
+      },
+      {
+        "ran": false,
+        "finished": false,
+        "name": "es_extract"
+      },
+      {
+        "ran": false,
+        "finished": false,
+        "name": "etl"
+      },
+      {
+        "ran": false,
+        "finished": false,
+        "name": "upload"
+      },
+      {
+        "ran": false,
+        "finished": false,
+        "name": "sync_users"
+      },
+      {
+        "ran": false,
+        "finished": false,
+        "name": "validation"
+      }
+    ],
+    "error": true,
+    "last_start": 1334052372
+  }
+}
