@@ -1,30 +1,99 @@
+#!/usr/bin/env ruby
+# 1.9 adds realpath to resolve symlinks; 1.8 doesn't
+# have this method, so we add it so we get resolved symlinks
+# and compatibility
+unless File.respond_to? :realpath
+  class File #:nodoc:
+    def self.realpath path
+      return realpath(File.readlink(path)) if symlink?(path)
+      path
+    end
+  end
+end
+$: << File.expand_path(File.dirname(File.realpath(__FILE__)) + '/../lib')
 require 'rubygems'
+# require 'bundler/setup'
+require 'gli'
 require 'infra'
+include GLI
 
-include Infra
+program_desc 'Framework for running projects. It helps you with managing state and restarting steps when necessary'
+version Infra::VERSION
 
-app = App.new({
-  :logger => Logger.new(STDOUT)
-})
+desc 'Print project summary'
+command :summary do |c|
+  c.action do |global_options,options,args|
+    GUI.summary
+  end
+end
 
-app.instance_eval(File.read('app.rb'))
-app.run
+desc 'Run project from beginning'
+command :run do |c|
+  c.action do |global_options,options,args|
+    APP.run
+  end
+end
 
-# pp app.steps.map {|step| step.name}
+desc 'Run project from last checkpoint'
+command :restart_from_last_checkpoint do |c|
+  c.action do |global_options,options,args|
+    APP.restart_from_last_checkpoint
+  end
+end
 
-# pp app.restartable_steps.map {|step| step.name}
-gui = AppGUI.new(app)
-app.awake
-# binding.pry
 
-app.run
+# desc 'Load data'
+command :load do |c|
+  c.desc 'Execute only for one entity.'
+  c.default_value false
+  c.flag [:o, :only]
+  
+  c.desc 'Print the task in the ugly oneliner mode for use in legacy tools. Does not run the actual extract.'
+  c.default_value false
+  c.switch [:j, :json]
+  
+  c.desc 'Verbose mode'
+  c.default_value false
+  c.switch [:v, :verbose]
 
-# gui.pry
-# gui.steps
-# gui.ran_steps
+  c.desc 'Base files directory. If specified it will ignore specific files and it will pick up all files in this directory with pattern load*.json'
+  c.default_value nil
+  c.flag [:b, :basedir]
 
-# $should_fail = false
-# app.restart_from_last_checkpoint
-# gui.pry
+  c.action do |global_options,options,args|
+    
+  end
+end
 
-# binding.pry
+pre do |global,command,options,args|
+  next true if command.nil?
+  # Pre logic here
+  # Return true to proceed; false to abourt and not call the
+  # chosen command
+  # Use skips_pre before a command to skip this block
+  # on that command only
+  APP = Infra::App.new
+  APP.instance_eval(File.read('app.rb'))
+  APP.awake
+  APP.initialize_params
+  GUI = Infra::AppGUI.new(APP)
+end
+
+post do |global,command,options,args|
+  # Post logic here
+  # Use skips_post before a command to skip this
+  # block on that command only
+end
+
+on_error do |exception|
+  # pp exception.backtrace
+    # pp exception.inspect
+    # puts exception.message.color(:red)
+    # false
+  # Error logic here
+  # return false to skip default error handling
+  # false
+  true
+end
+
+exit GLI.run(ARGV)

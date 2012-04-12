@@ -25,7 +25,7 @@ Gem::Specification.new do |s|
   s.add_runtime_dependency "pry"
   s.add_runtime_dependency "terminal-table"
   s.add_runtime_dependency "json"
-  s.add_runtime_dependency "active_support"
+  s.add_runtime_dependency "activesupport"
   s.add_runtime_dependency "actionpack"
   s.add_runtime_dependency "rainbow"
   s.add_runtime_dependency "open4"

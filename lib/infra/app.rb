@@ -2,10 +2,43 @@ require 'logger'
 require 'terminal-table'
 require 'json'
 require 'time'
-require 'active_support/time'
 require 'action_view'
+require 'active_support/time'
 require 'rainbow'
 require 'open4'
+require 'fileutils'
+require 'pathname'
+
+
+module WorkspaceConstants
+  PROJECT_DIR = Pathname.new(".").expand_path
+  DATA_DIR = PROJECT_DIR + 'data'
+  DEFAULT_PARAMS = {
+    "PROJECT_DIR"     => PROJECT_DIR,
+    "LOG_PATH"        => PROJECT_DIR + "logs",
+    "CONFIG_DIR"      => PROJECT_DIR + "config",
+    "ESTORE_DIR"      => PROJECT_DIR + "estore",
+    "GRAPH_DIR"       => PROJECT_DIR + "graph",
+    "SCRIPT_DIR"      => PROJECT_DIR + "script",
+    "META_DIR"        => PROJECT_DIR + "meta",
+
+    "CLOVER_HOME"     => Pathname.new("/mnt/tools/clover"),
+    "SCRIPT_HOME"     => Pathname.new("/mnt/tools/script"),
+    
+    "DATA_DIR"        => DATA_DIR,
+    "SOURCE_DIR"      => DATA_DIR + "source",
+    "ESTORE_IN_DIR"   => DATA_DIR + "estore-in",
+    "ESTORE_OUT_DIR"  => DATA_DIR + "estore-out",
+    "TRANSFORM_DIR"   => DATA_DIR + "transform",
+    "GOODDATA_DIR"    => DATA_DIR + "gooddata",
+    "LOOKUP_DIR"      => DATA_DIR + "lookup",
+    "TEMP_DIR"        => DATA_DIR + "temp",
+    
+    "CLTOOL_HOME"     => Pathname.new("/mnt/tools/cltool/bin"),
+    
+    "PID"             => File.read(PROJECT_DIR + 'pid')
+  }
+end
 
 class StepError < RuntimeError
   
@@ -19,9 +52,6 @@ end
 
 class ExitException < RuntimeError
 end
-
-
-logger = Logger.new(STDOUT)
 
 module Infra
 
@@ -41,7 +71,7 @@ module Infra
 
   class App
 
-    attr_accessor :logger, :error, :sequence, :ran, :last_start, :last_finish
+    attr_accessor :logger, :error, :sequence, :ran, :last_successful_start, :last_successful_finish, :last_attempt
 
     def initialize(options = {})
       @sequence = [:download, :es_load, :es_extract, :etl, :upload, :sync_users, :validation]
@@ -50,18 +80,23 @@ module Infra
       @error = false
       @ran = false
       
-      @parameters = {
-        "param1" => "value1"
-      }
+      @parameters = {}
     end
 
     def get(key)
+      return if @parameters.nil?
       @parameters[key]
     end
 
     def set(key, value)
+      @parameters = {} if @parameters.nil?
       logger.info("Prameter '#{key}' was set to value '#{value}'")
+      @need_to_reset_workpspace = true
       @parameters[key] = value
+    end
+
+    def set_logger(logger)
+      @logger = logger
     end
 
     def step(name, options={}, &b)
@@ -87,10 +122,27 @@ module Infra
 
       s = Step.new(name, options, &wrapper)
       @step_blocks[name.to_s] = s
-      
+    end
 
-      # fail StepError.new("failed with status #{$?}", name) if $? != 0
-      # logger.info "Step #{name} Ended"
+    def load_config
+      return unless File.exist?('params.json')
+      JSON.parse(File.read('params.json'))
+    end
+
+    def initialize_params
+      params = load_config()
+      merged_params = WorkspaceConstants::DEFAULT_PARAMS.merge(params)
+      merged_params.each_pair do |key, val|
+        set(key, val)
+      end
+    end
+
+    def interpolate_workspace
+      File.open('workspace.prm', 'w') do |f|
+        @parameters.each_pair do |key, val|
+          f.puts "#{key}=#{val}"
+        end
+      end
     end
 
     def exit
@@ -161,8 +213,9 @@ module Infra
       data = {
         :application => {
           :ran    => ran,
-          :last_start => last_start,
-          :last_finish => last_finish,
+          :last_successful_start => last_successful_start,
+          :last_attempt => last_attempt,
+          :last_successful_finish => last_successful_finish,
           :error  => error,
           :steps  => steps.map {|step| {
             :name     => step.name,
@@ -180,12 +233,12 @@ module Infra
       return unless File.exist?('setup.json')
       data = JSON.parse(File.read('setup.json'), :symbolize_names => true)
       @ran = data[:application][:ran]
-      @last_start = data[:application][:last_start]
-      @last_finish = data[:application][:last_finish]
+      @last_successful_start      = data[:application][:last_successful_start]
+      @last_attempt               = data[:application][:last_attempt]
+      @last_successful_finish     = data[:application][:last_successful_finish]
       @error = data[:application][:error]
       data[:application][:steps].each do |step|
         s = step_by_name(step[:name])
-        # binding.pry
         s.ran = step[:ran]
         s.finished = step[:finished]
       end
@@ -205,12 +258,19 @@ module Infra
 
     def run_shell(command)
       logger.info "Running external command '#{command}'"
-      pid, stdin, stdout, stderr = Open4::popen4(command)
+      cat = 'ruby -e"  ARGF.each{|line| STDOUT << line}  "'
+      pid, stdin, stdout, stderr = Open4::popen4("sh")
+      stdin.puts command
+      stdin.close
       _, status = Process::waitpid2(pid)
+      output = ""
       stdout.each_line do |line|
+        $stdout.puts line
         logger.info(line)
+        output += line
       end
       stderr.each_line do |line|
+        $stderr.puts line
         logger.warn(line)
       end
       if status.exitstatus == 0 
@@ -219,19 +279,30 @@ module Infra
         logger.error "External command '#{command}' FAILED"
         fail "External step"
       end
+      [output.chomp, status.exitstatus]
     end
 
     private
     def run_steps(steps_to_run)
-      @last_start = Time.now.to_i
-      steps_to_run.each do |step|
-        step.ran = true
-        instance_eval(&step.block)
-        break if @error
-        step.finished = true
+      fail "ETL is already runnning" if File.exist?('running.pid')
+      begin
+        FileUtils.touch('running.pid')
+        @last_attempt = Time.now.to_i
+        steps_to_run.each do |step|
+          step.ran = true
+          interpolate_workspace if @need_to_reset_workpspace
+          instance_eval(&step.block)
+          break if @error
+          step.finished = true
+        end
+        if !@error
+          @last_successful_finish = Time.now.to_i
+          @last_successful_start = @last_attempt
+        end
+        sleep
+      ensure
+        FileUtils.rm_f('running.pid')
       end
-      @last_finish = Time.now.to_i
-      sleep
     end
 
     def restart_from_step(restart_step)
@@ -241,7 +312,6 @@ module Infra
       run_steps(steps_to_run)
     end
 
-    
   end
 
   class AppGUI
@@ -274,13 +344,13 @@ module Infra
 
     def summary
       now = Time.now.to_i
-      duration = @app.last_finish - @app.last_start
+      duration = @app.last_successful_finish - @app.last_successful_start
       table = Terminal::Table.new(:title => "Last Run Summary".bright) do |t|
         t << ["Finished Sucessfully", convert_value(!@app.error)]
-        t << ["Started", "#{distance_of_time_in_words(now - @app.last_start)} ago"]
-        t << ["Finished", "#{distance_of_time_in_words(now - @app.last_finish)} ago"]
-        t << ["Started", Time.at(@app.last_start).to_s]
-        t << ["Finished", Time.at(@app.last_finish).to_s]
+        t << ["Started", "#{distance_of_time_in_words(now - @app.last_successful_start)} ago"]
+        t << ["Finished", "#{distance_of_time_in_words(now - @app.last_successful_finish)} ago"]
+        t << ["Started", Time.at(@app.last_successful_start).to_s]
+        t << ["Finished", Time.at(@app.last_successful_finish).to_s]
         t << ["Duration", "#{duration} seconds"]
         t << ["Duration", "#{duration} seconds"]
         t << ["Implemented Steps", @app.steps.count]
@@ -301,7 +371,6 @@ module Infra
         end
       end
       puts table
-      
     end
 
     private
