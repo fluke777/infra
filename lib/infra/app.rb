@@ -9,17 +9,21 @@ require 'open4'
 require 'fileutils'
 require 'pathname'
 
+include FileUtils
 
 module WorkspaceConstants
   PROJECT_DIR = Pathname.new(".").expand_path
-  DATA_DIR = PROJECT_DIR + 'data'
+  DATA_DIR    = PROJECT_DIR + 'data'
+  CLTOOL_HOME = Pathname.new("/mnt/tools/cltool/bin")
+  SCRIPT_DIR  = PROJECT_DIR + "script"
+  
   DEFAULT_PARAMS = {
     "PROJECT_DIR"     => PROJECT_DIR,
     "LOG_PATH"        => PROJECT_DIR + "logs",
     "CONFIG_DIR"      => PROJECT_DIR + "config",
     "ESTORE_DIR"      => PROJECT_DIR + "estore",
     "GRAPH_DIR"       => PROJECT_DIR + "graph",
-    "SCRIPT_DIR"      => PROJECT_DIR + "script",
+    
     "META_DIR"        => PROJECT_DIR + "meta",
 
     "CLOVER_HOME"     => Pathname.new("/mnt/tools/clover"),
@@ -34,7 +38,12 @@ module WorkspaceConstants
     "LOOKUP_DIR"      => DATA_DIR + "lookup",
     "TEMP_DIR"        => DATA_DIR + "temp",
     
-    "CLTOOL_HOME"     => Pathname.new("/mnt/tools/cltool/bin"),
+    "SCRIPT_DIR"      => SCRIPT_DIR,
+    "CL_SCRIPT"       => SCRIPT_DIR + 'gd_load.script',
+    "CLTOOL_HOME"     => CLTOOL_HOME,
+    "CLTOOL_EXE"      => CLTOOL_HOME + 'gd.sh',
+    
+    "CLOVER_PARAMS"   => "-nodebug -loglevel ERROR -logcfg /Users/fluke/sandbox/clover/log4j.properties -cfg #{PROJECT_DIR}/workspace.prm",
     
     "PID"             => File.read(PROJECT_DIR + 'pid')
   }
@@ -73,14 +82,17 @@ module Infra
 
     attr_accessor :logger, :error, :sequence, :ran, :last_successful_start, :last_successful_finish, :last_attempt
 
+    include Infra::Helpers
+
     def initialize(options = {})
-      @sequence = [:download, :es_load, :es_extract, :etl, :upload, :sync_users, :validation]
+      @sequence = [:clean_up, :download, :preformat, :pre_es_transform, :es_load, :es_extract, :transform, :upload, :sync_users, :validation]
       @step_blocks = {}
       @logger = options[:logger]
       @error = false
       @ran = false
       
       @parameters = {}
+      @saved_parameters = {}
     end
 
     def get(key)
@@ -88,11 +100,17 @@ module Infra
       @parameters[key]
     end
 
-    def set(key, value)
+    def set(key, value, options={})
       @parameters = {} if @parameters.nil?
-      logger.info("Prameter '#{key}' was set to value '#{value}'")
-      @need_to_reset_workpspace = true
+      logger.info("Prameter '#{key}' was set to value '#{value}'") unless options[:silent]
       @parameters[key] = value
+      interpolate_workspace
+    end
+
+    def save(key, value)
+      @saved_parameters = {} if @saved_parameters.nil?
+      @saved_parameters[key] = value
+      set(key, value)
     end
 
     def set_logger(logger)
@@ -133,7 +151,7 @@ module Infra
       params = load_config()
       merged_params = WorkspaceConstants::DEFAULT_PARAMS.merge(params)
       merged_params.each_pair do |key, val|
-        set(key, val)
+        set(key, val, :silent => true)
       end
     end
 
@@ -222,7 +240,8 @@ module Infra
             :ran      => step.ran,
             :finished => step.finished
           }}
-        }
+        },
+        :params => @saved_parameters
       }
       File.open('setup.json', 'w') do |f|
         f.write(JSON.pretty_generate(data))
@@ -230,56 +249,38 @@ module Infra
     end
 
     def awake
-      return unless File.exist?('setup.json')
+      unless File.exist?('setup.json')
+        logger.warn("setup.json does not exist")
+        return
+      end
       data = JSON.parse(File.read('setup.json'), :symbolize_names => true)
-      @ran = data[:application][:ran]
-      @last_successful_start      = data[:application][:last_successful_start]
-      @last_attempt               = data[:application][:last_attempt]
-      @last_successful_finish     = data[:application][:last_successful_finish]
-      @error = data[:application][:error]
-      data[:application][:steps].each do |step|
-        s = step_by_name(step[:name])
-        s.ran = step[:ran]
-        s.finished = step[:finished]
-      end
-    end
-
-    def run_downloader
-      puts "running downloader"
-    end
-
-    def run_archiver
-      puts "running archiver"
-    end
-
-    def run_clover
-      puts "runnning clover"
-    end
-
-    def run_shell(command)
-      logger.info "Running external command '#{command}'"
-      cat = 'ruby -e"  ARGF.each{|line| STDOUT << line}  "'
-      pid, stdin, stdout, stderr = Open4::popen4("sh")
-      stdin.puts command
-      stdin.close
-      _, status = Process::waitpid2(pid)
-      output = ""
-      stdout.each_line do |line|
-        $stdout.puts line
-        logger.info(line)
-        output += line
-      end
-      stderr.each_line do |line|
-        $stderr.puts line
-        logger.warn(line)
-      end
-      if status.exitstatus == 0 
-        logger.info "Finished external command '#{command}'"
+      
+      if data[:application].nil?
+        logger.warn("setup.json exists but it is probably empty")
+        return
       else
-        logger.error "External command '#{command}' FAILED"
-        fail "External step"
+        @ran = data[:application][:ran]
+        @last_successful_start      = data[:application][:last_successful_start]
+        @last_attempt               = data[:application][:last_attempt]
+        @last_successful_finish     = data[:application][:last_successful_finish]
+
+        set('LAST_SUCCESFULL_FINISH', @last_successful_finish, :silent => true)
+        set('LAST_ATTEMPT', @last_attempt, :silent => true)
+        set('LAST_SUCCESSFUL_START', @last_successful_start, :silent => true)
+
+        data[:params] && data[:params].each_pair do |key, val|
+          set(key.to_s, val)
+        end
+
+        @error = data[:application][:error]
+        data[:application] && data[:application][:steps].each do |step|
+          s = step_by_name(step[:name])
+          # the step has configuration in json but such a step is not defined in app
+          next if s.nil?
+          s.ran = step[:ran]
+          s.finished = step[:finished]
+        end
       end
-      [output.chomp, status.exitstatus]
     end
 
     private
@@ -290,7 +291,6 @@ module Infra
         @last_attempt = Time.now.to_i
         steps_to_run.each do |step|
           step.ran = true
-          interpolate_workspace if @need_to_reset_workpspace
           instance_eval(&step.block)
           break if @error
           step.finished = true

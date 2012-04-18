@@ -86,7 +86,7 @@ post do |global,command,options,args|
 end
 
 on_error do |exception|
-  # pp exception.backtrace
+  pp exception.backtrace
     # pp exception.inspect
     # puts exception.message.color(:red)
     # false
