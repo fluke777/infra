@@ -1,12 +1,17 @@
 module Infra
 
   module Helpers
-    
-    def neco_helper
-      run_shell("neco.sh a b")
+
+    def load_config
+      return unless File.exist?('params.json')
+      JSON.parse(File.read('params.json'))
     end
-    
-    def cleanup
+
+    def set_logger(logger)
+      @logger = logger
+    end
+
+    def cleanup(*args)
       ['SOURCE_DIR', 'ESTORE_OUT_DIR', 'ESTORE_IN_DIR', 'GOODDATA_DIR'].each do |name|
         directory = get(name)
         FileUtils.rm_rf("#{directory}/.", :secure => true)
@@ -18,6 +23,7 @@ module Infra
     end
 
     def truncate_event_store(from=get('LAST_SUCCESFULL_FINISH'))
+      # TODO: Fix the error here. It uses wrong date
       if from
         run_shell("set -a; source workspace.prm; es -l truncate --basedir=./estore --timestamp=#{from}")
       else
@@ -54,14 +60,14 @@ module Infra
       end
       $stdout.puts(output)
       logger.info(output)
-      
+
       error = ""
       stderr.each_line do |line|
         error += line
       end
       $stderr.puts(error)
       logger.warn(error)
-      
+
       if status.exitstatus == 0 
         logger.info "Finished external command '#{command}'"
       else

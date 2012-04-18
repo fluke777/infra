@@ -18,15 +18,14 @@ Gem::Specification.new do |s|
   s.executables   = `git ls-files -- bin/*`.split("\n").map{ |f| File.basename(f) }
   s.require_paths = ["lib"]
 
-  s.executables << 'infra'
-  
   # specify any dependencies here; for example:
-  s.add_development_dependency "pry"
   s.add_runtime_dependency "pry"
+  s.add_runtime_dependency "gli"
   s.add_runtime_dependency "terminal-table"
   s.add_runtime_dependency "json"
   s.add_runtime_dependency "activesupport"
   s.add_runtime_dependency "actionpack"
   s.add_runtime_dependency "rainbow"
   s.add_runtime_dependency "open4"
+  s.add_runtime_dependency "timecop"
 end

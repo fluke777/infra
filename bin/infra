@@ -12,9 +12,10 @@ unless File.respond_to? :realpath
 end
 $: << File.expand_path(File.dirname(File.realpath(__FILE__)) + '/../lib')
 require 'rubygems'
-# require 'bundler/setup'
+require 'bundler/setup'
 require 'gli'
 require 'infra'
+require 'logger'
 include GLI
 
 program_desc 'Framework for running projects. It helps you with managing state and restarting steps when necessary'
@@ -42,29 +43,6 @@ command :restart_from_last_checkpoint do |c|
 end
 
 
-# desc 'Load data'
-command :load do |c|
-  c.desc 'Execute only for one entity.'
-  c.default_value false
-  c.flag [:o, :only]
-  
-  c.desc 'Print the task in the ugly oneliner mode for use in legacy tools. Does not run the actual extract.'
-  c.default_value false
-  c.switch [:j, :json]
-  
-  c.desc 'Verbose mode'
-  c.default_value false
-  c.switch [:v, :verbose]
-
-  c.desc 'Base files directory. If specified it will ignore specific files and it will pick up all files in this directory with pattern load*.json'
-  c.default_value nil
-  c.flag [:b, :basedir]
-
-  c.action do |global_options,options,args|
-    
-  end
-end
-
 pre do |global,command,options,args|
   next true if command.nil?
   # Pre logic here
@@ -72,10 +50,26 @@ pre do |global,command,options,args|
   # chosen command
   # Use skips_pre before a command to skip this block
   # on that command only
-  APP = Infra::App.new
-  APP.instance_eval(File.read('app.rb'))
-  APP.awake
+  app_file        = 'app'
+  workspace_file  = 'workspace.prm'
+  run_params_file      = 'run_params.json'
+  params_file     = 'params.json'
+
+  fail "You do not seem to be in a project directory. App definition #{app_file} is missing." unless File.exist?(app_file)
+
+  params = JSON.parse(File.read(params_file))
+  params.merge!({"PID" => File.read('pid').chomp})
+
+  APP = Infra::App.new({
+    :logger           => Logger.new(STDOUT),
+    :run_params_file  => run_params_file,
+    :workspace_file   => workspace_file,
+    :params           => params
+  })
+
+  APP.instance_eval(File.read(app_file))
   APP.initialize_params
+  APP.awake
   GUI = Infra::AppGUI.new(APP)
 end
 
