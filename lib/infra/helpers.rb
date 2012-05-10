@@ -76,5 +76,41 @@ module Infra
       end
       [output.chomp, status.exitstatus]
     end
+
+    def download_validations
+      customer    = get('CUSTOMER')
+      project     = get('PROJECT')
+      pid         = get('PID')
+      sfdc_login  = get('SFDC_USERNAME')
+      sfdc_pass   = get('SFDC_PASSWORD')
+
+      fail "SFDC password is not defined" if sfdc_pass.nil?
+      fail "SFDC login is not defined" if sfdc_login.nil?
+
+      GoodData.connect(get('LOGIN'), get('PASSWORD'))
+      GoodData.project = pid
+
+      rforce_connection = RForce::Binding.new 'https://www.salesforce.com/services/Soap/u/20.0'
+      rforce_connection.login sfdc_login, sfdc_pass
+
+      options = {
+        :save_to            => "./validations/sf_results/#{customer}/#{project}",
+        :mail_path          => "./validations/out/#{customer}/#{project}/mail.txt",
+        :splunk_path        => "./validations/out/#{customer}/#{project}/splunk.txt",
+        :json_path          => "./validations/out/#{customer}/#{project}/json.json",
+        :pid                => pid,
+        :rforce_connection  => rforce_connection,
+        :project            => GoodData.project,
+        :ms_project_name    => "#{customer}-#{project}"
+      }
+
+      d = GoodData::SfdcTests::ReportDownloader.new(options)
+      reports = d.get_reports_for_validation
+      # if cmd_options[:verbose]
+      #   reports.each {|r| puts r.title}
+      # end
+      d.get_and_save_sfdc_reports(reports)
+    end
+
   end
 end
