@@ -219,7 +219,7 @@ module Infra
       if obj
         @run_after_failure << obj
       elsif block_given?
-        @run_after_failure << @b
+        @run_after_failure << b
       end
     end
 
