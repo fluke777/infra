@@ -112,5 +112,8 @@ module Infra
       d.get_and_save_sfdc_reports(reports)
     end
 
+    def add_users(file)
+      fail "Not implemented"
+    end
   end
 end

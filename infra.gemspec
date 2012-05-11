@@ -28,4 +28,5 @@ Gem::Specification.new do |s|
   s.add_runtime_dependency "rainbow"
   s.add_runtime_dependency "open4"
   s.add_runtime_dependency "timecop"
+  s.add_runtime_dependency "sfdc_tests"
 end

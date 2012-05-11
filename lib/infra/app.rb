@@ -15,6 +15,12 @@ include FileUtils
 
 module Infra
 
+  TOOLS_ROOT              = Pathname.new('/mnt/tools')
+  CHIPMUNK_ROOT           = TOOLS_ROOT + 'chipmunk'
+  PROJECTS_TEMPLATE_ROOT  = CHIPMUNK_ROOT + 'template'
+  PROJECTS_ROOT           = CHIPMUNK_ROOT + 'projects'
+  
+
   class ExitException < RuntimeError
   end
 
@@ -87,10 +93,12 @@ module Infra
     def initialize_params
         project_dir = Pathname.new(@ran_in_directory).expand_path
         data_dir    = project_dir + 'data'
-        cltool_home = Pathname.new("/mnt/tools/cltool/bin")
+        cltool_home = TOOLS_ROOT + "cltool/bin"
         script_dir  = project_dir + "script"
         
         default_params = {
+          "PROJECTS_ROOT"   => PROJECTS_ROOT,
+          "TOOLS_DIR"       => TOOLS_ROOT,
           "PROJECT_DIR"     => project_dir,
           "LOG_PATH"        => project_dir + "logs",
           "CONFIG_DIR"      => project_dir + "config",
@@ -99,8 +107,8 @@ module Infra
                                
           "META_DIR"        => project_dir + "meta",
       
-          "CLOVER_HOME"     => Pathname.new("/mnt/tools/clover"),
-          "SCRIPT_HOME"     => Pathname.new("/mnt/tools/script"),
+          "CLOVER_HOME"     => TOOLS_ROOT + "clover",
+          "SCRIPT_HOME"     => TOOLS_ROOT + "script",
           
           "DATA_DIR"        => data_dir,
           "SOURCE_DIR"      => data_dir + "source",
