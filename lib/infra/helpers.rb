@@ -1,3 +1,5 @@
+require 'pony'
+
 module Infra
 
   module Helpers
@@ -115,5 +117,18 @@ module Infra
     def add_users(file)
       fail "Not implemented"
     end
+
+    # mail(:to => email, :from => 'sf-validations@gooddata.com', :subject => "SUBJ", :body => "See attachment for details")
+    def mail(options={})
+      options.merge!({
+        # :via => :smtp
+      })
+      begin
+        Pony.mail(options)
+      rescue
+        logger.warn "Email could not be sent"
+      end
+    end
+
   end
 end

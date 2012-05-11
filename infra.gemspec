@@ -29,4 +29,5 @@ Gem::Specification.new do |s|
   s.add_runtime_dependency "open4"
   s.add_runtime_dependency "timecop"
   s.add_runtime_dependency "sfdc_tests"
+  s.add_runtime_dependency "pony"
 end
