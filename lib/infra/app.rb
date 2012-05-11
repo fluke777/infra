@@ -43,6 +43,7 @@ module Infra
       @saved_parameters = {}
       @custom_params = options[:params] || {}
       @run_after_failure = []
+      @run_after_success = []
       initialize_params
     end
 
@@ -223,6 +224,14 @@ module Infra
       end
     end
 
+    def after_success(obj=nil, &b)
+      if obj
+        @run_after_success << obj
+      elsif block_given?
+        @run_after_success << b
+      end
+    end
+
     def sleep
       data = {
         :application => {
@@ -307,10 +316,19 @@ module Infra
         end
         sleep
       ensure
-        @run_after_failure.each do |callback|
-          callback.call
+        begin
+          if @error
+            @run_after_failure.each do |callback|
+              callback.call
+            end
+          else
+            @run_after_success.each do |callback|
+              callback.call
+            end
+          end
+        ensure
+          FileUtils.rm_f('running.pid')
         end
-        FileUtils.rm_f('running.pid')
       end
     end
     

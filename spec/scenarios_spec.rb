@@ -63,13 +63,13 @@ describe Infra::App do
 
   end
 
-  it "should execute after_failure blocks after it runs" do
+  it "should NOT execute after_failure blocks after it runs" do
     app = Infra::App.new(:logger => Logger.new(File.open('/dev/null', 'a')))
     app.sequence.each {|name| app.step(name) {}}
 
     mail_to_pd = double("PD mailer")
     mail_to_pd.stub(:call).and_return(true)
-    mail_to_pd.should_receive(:call)
+    mail_to_pd.should_not_receive(:call)
     app.after_failure(mail_to_pd)
     app.run
   end
@@ -93,8 +93,43 @@ describe Infra::App do
 
     mail_to_pd = double("PD mailer")
     mail_to_pd.stub(:call).and_return(true)
-    mail_to_pd.should_receive(:call)
+    mail_to_pd.should_not_receive(:call)
     app.after_failure(mail_to_pd)
+    app.run
+  end
+
+  it "should execute after_success blocks after it runs" do
+    app = Infra::App.new(:logger => Logger.new(File.open('/dev/null', 'a')))
+    app.sequence.each {|name| app.step(name) {}}
+
+    mail_to_pd = double("PD mailer")
+    mail_to_pd.stub(:call).and_return(true)
+    mail_to_pd.should_receive(:call)
+    app.after_success(mail_to_pd)
+    app.run
+  end
+
+  it "should NOT execute after_failure blocks after it runs and fails" do
+    app = Infra::App.new(:logger => Logger.new(File.open('/dev/null', 'a')))
+    app.sequence.each {|name| app.step(name) {}}
+    app.step(:download) {fail}
+
+    mail_to_pd = double("PD mailer")
+    mail_to_pd.stub(:call).and_return(true)
+    mail_to_pd.should_not_receive(:call)
+    app.after_success(mail_to_pd)
+    app.run
+  end
+
+  it "should execute after_failure blocks after it runs and exits" do
+    app = Infra::App.new(:logger => Logger.new(File.open('/dev/null', 'a')))
+    app.sequence.each {|name| app.step(name) {}}
+    app.step(:download) {exit}
+
+    mail_to_pd = double("PD mailer")
+    mail_to_pd.stub(:call).and_return(true)
+    mail_to_pd.should_receive(:call)
+    app.after_success(mail_to_pd)
     app.run
   end
 
