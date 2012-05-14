@@ -12,7 +12,7 @@ unless File.respond_to? :realpath
 end
 $: << File.expand_path(File.dirname(File.realpath(__FILE__)) + '/../lib')
 require 'rubygems'
-require 'bundler/setup'
+# require 'bundler/setup'
 require 'gli'
 require 'infra'
 require 'logger'
@@ -71,7 +71,7 @@ pre do |global,command,options,args|
   params.merge!({"PID" => File.read('pid').chomp})
 
   APP = Infra::App.new({
-    :logger           => Logger.new(project_root + 'logs' + 'run.log', 'daily'),
+    :logger           => Logger.new(project_root + 'log' + 'run.log', 'daily'),
     :run_params_file  => run_params_file,
     :workspace_file   => workspace_file,
     :params           => params

@@ -83,6 +83,7 @@ module Infra
 
     def add_step(step)
       fail "Step #{step.name} will not be run. Only steps #{@sequence.join(', ')} are supported." unless @sequence.include?(step.name.to_sym)
+      logger.warn "Step with name '#{step.name}' is already defined" if @step_blocks.has_key?(step.name)
       @step_blocks[step.name] = step
     end
 
@@ -101,7 +102,7 @@ module Infra
           "PROJECTS_ROOT"   => PROJECTS_ROOT,
           "TOOLS_DIR"       => TOOLS_ROOT,
           "PROJECT_DIR"     => project_dir,
-          "LOG_PATH"        => project_dir + "logs",
+          "LOG_PATH"        => project_dir + "log",
           "CONFIG_DIR"      => project_dir + "config",
           "ESTORE_DIR"      => project_dir + "estore",
           "GRAPH_DIR"       => project_dir + "graph",
