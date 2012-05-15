@@ -39,7 +39,7 @@ module Infra
       @bail = false
       @ran_in_directory = options[:home_directory].nil? ? Pathname.new('.').expand_path : Pathname.new(options[:home_directory]).expand_path
       @run_params_file = options[:run_params_file]
-
+      @workspace_filename = options[:workspace_file]
       @saved_parameters = {}
       @custom_params = options[:params] || {}
       @run_after_failure = []
@@ -93,10 +93,12 @@ module Infra
     end
 
     def initialize_params
-        project_dir = Pathname.new(@ran_in_directory).expand_path
-        data_dir    = project_dir + 'data'
-        cltool_home = TOOLS_ROOT + "cltool/bin"
-        script_dir  = project_dir + "script"
+        project_dir         = Pathname.new(@ran_in_directory).expand_path
+        data_dir            = project_dir + 'data'
+        cltool_home         = TOOLS_ROOT + "cltool/bin"
+        script_dir          = project_dir + "script"
+        clover_home         = TOOLS_ROOT + "clover"
+        clover_current_home = clover_home + "current"
         
         default_params = {
           "PROJECTS_ROOT"   => PROJECTS_ROOT,
@@ -109,7 +111,7 @@ module Infra
                                
           "META_DIR"        => project_dir + "meta",
       
-          "CLOVER_HOME"     => TOOLS_ROOT + "clover",
+          
           "SCRIPT_HOME"     => TOOLS_ROOT + "script",
           
           "DATA_DIR"        => data_dir,
@@ -137,8 +139,9 @@ module Infra
     end
 
     def write_workspace
+      output = interpolate_workspace
       File.open(@workspace_filename, 'w') do |f|
-        output.each {|o| f << o}
+        output.each {|o| f.puts o}
       end
     end
 
@@ -273,8 +276,8 @@ module Infra
         @last_successful_start      = data[:application][:last_successful_start]
         @last_attempt               = data[:application][:last_attempt]
         @last_successful_finish     = data[:application][:last_successful_finish]
-        @last_full_run_start        = data[:application][:last_full_run_start],
-        @current_full_run_start     = data[:application][:current_full_run_start],
+        @last_full_run_start        = data[:application][:last_full_run_start]
+        @current_full_run_start     = data[:application][:current_full_run_start]
 
         set('LAST_SUCCESFULL_FINISH', @last_successful_finish, :silent => true)
         set('LAST_ATTEMPT', @last_attempt, :silent => true)
@@ -335,8 +338,11 @@ module Infra
     
     def run_step(step)
       logger.info "Step started #{step.name}"
+      write_workspace unless @workspace_filename.nil?
       begin
         result = step.run(self)
+      rescue ArgumentError => e
+        fail e.inspect
       rescue ExitException
         @bail = true
         logger.info "Exit from inside of step"

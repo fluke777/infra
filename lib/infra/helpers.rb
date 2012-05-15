@@ -20,8 +20,9 @@ module Infra
       end
     end
 
-    def load_event_store
-      run_shell("set -a; source workspace.prm; es -l load --basedir=./estore")
+    def load_event_store(options={})
+      basedir = options[:basedir] || get('ESTORE_DIR')
+      run_shell("set -a; source workspace.prm; es -l load --basedir=#{basedir}")
     end
 
     def truncate_event_store(from=get('LAST_SUCCESFULL_FINISH'))
@@ -38,7 +39,13 @@ module Infra
     end
 
     def upload_data_with_cl(options = {})
-      run_shell("#{get('CLTOOL_EXE')} -u#{get('LOGIN')} -p#{get('PASSWORD')} #{get('CL_SCRIPT')}")
+      login = get('LOGIN') || options[:login]
+      login = get('PASSWORD') || options[:password]
+
+      fail ArgumentError.new("Error in Upload_data_with_cl helper. Please define login either as parameter LOGIN in params.json or as :login option") if login.nil? || login.empty?
+      fail ArgumentError.new("Error in Upload_data_with_cl helper. Please define login either as parameter PASSWORD in params.json or as :password option") if password.nil? || password.empty?
+
+      run_shell("#{get('CLTOOL_EXE')} -u#{login} -p#{password} #{get('CL_SCRIPT')}")
     end
 
     def run_clover_graph(graph, options={})
@@ -114,8 +121,8 @@ module Infra
       d.get_and_save_sfdc_reports(reports)
     end
 
-    def add_users(file)
-      fail "Not implemented"
+    def add_users(options={})
+      
     end
 
     # mail(:to => email, :from => 'sf-validations@gooddata.com', :subject => "SUBJ", :body => "See attachment for details")

@@ -1,4 +1,3 @@
-require 'rubygems'
 require "infra/version"
 require 'infra/helpers'
 require 'infra/step'

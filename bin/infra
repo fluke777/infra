@@ -12,13 +12,14 @@ unless File.respond_to? :realpath
 end
 $: << File.expand_path(File.dirname(File.realpath(__FILE__)) + '/../lib')
 require 'rubygems'
-# require 'bundler/setup'
+require 'bundler/setup'
 require 'gli'
-require 'infra'
 require 'logger'
 require 'gooddata'
 # require 'sfdc_tests'
 require 'pathname'
+require 'infra'
+require 'downloader'
 include GLI
 
 program_desc 'Framework for running projects. It helps you with managing state and restarting steps when necessary'
@@ -33,8 +34,20 @@ end
 
 desc 'Run project from beginning'
 command :run do |c|
+
+  c.desc 'Path to the directory with application'
+  c.arg_name 'path_to_application directory'
+  c.default_value nil
+  c.flag [:d,:directory]
+
   c.action do |global_options,options,args|
-    APP.run
+    if options[:directory]
+      FileUtils::cd options[:directory] do
+        APP.run
+      end
+    else
+      APP.run
+    end
   end
 end
 
@@ -63,21 +76,22 @@ pre do |global,command,options,args|
   workspace_file  = 'workspace.prm'
   run_params_file = 'run_params.json'
   params_file     = 'params.json'
-  project_root    = Pathname.new(Dir.pwd)
+  project_root    = options[:directory] ? Pathname.new(options[:directory]).expand_path : Pathname.new(Dir.pwd).expand_path
 
-  fail "You do not seem to be in a project directory. App definition #{app_file} is missing." unless File.exist?(app_file)
+  fail "You do not seem to be in a project directory. App definition #{app_file} is missing." unless File.exist?(project_root + app_file)
 
-  params = JSON.parse(File.read(params_file))
-  params.merge!({"PID" => File.read('pid').chomp})
+  params = JSON.parse(File.read(project_root + params_file))
+  params.merge!({"PID" => File.read(project_root + 'pid').chomp})
 
   APP = Infra::App.new({
     :logger           => Logger.new(project_root + 'log' + 'run.log', 'daily'),
-    :run_params_file  => run_params_file,
-    :workspace_file   => workspace_file,
+    :home_directory   => project_root,
+    :run_params_file  => project_root + run_params_file,
+    :workspace_file   => project_root + workspace_file,
     :params           => params
   })
 
-  APP.instance_eval(File.read(app_file))
+  APP.instance_eval(File.read(project_root + app_file))
   APP.initialize_params
   APP.awake
   GUI = Infra::AppGUI.new(APP)

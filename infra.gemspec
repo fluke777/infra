@@ -19,15 +19,16 @@ Gem::Specification.new do |s|
   s.require_paths = ["lib"]
 
   # specify any dependencies here; for example:
-  s.add_runtime_dependency "pry"
-  s.add_runtime_dependency "gli"
-  s.add_runtime_dependency "terminal-table"
-  s.add_runtime_dependency "json"
-  s.add_runtime_dependency "activesupport"
-  s.add_runtime_dependency "actionpack"
-  s.add_runtime_dependency "rainbow"
-  s.add_runtime_dependency "open4"
-  s.add_runtime_dependency "timecop"
-  # s.add_runtime_dependency "sfdc_tests"
-  s.add_runtime_dependency "pony"
+  s.add_dependency "pry"
+  s.add_dependency "gooddata"
+  s.add_dependency "gli"
+  s.add_dependency "terminal-table"
+  s.add_dependency "json"
+  s.add_dependency "activesupport"
+  s.add_dependency "actionpack"
+  s.add_dependency "rainbow"
+  s.add_dependency "open4"
+  s.add_dependency "timecop"
+  s.add_dependency "pony"
+  s.add_dependency "downloader"
 end
