@@ -4,3 +4,4 @@ source "http://rubygems.org"
 gemspec
 
 # gem "sfdc_tests", :path => "../sfdc_tests"
+gem "downloader", :path => "../ms_downloader"

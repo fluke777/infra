@@ -110,7 +110,7 @@ module Infra
           "GRAPH_DIR"       => project_dir + "graph",
                                
           "META_DIR"        => project_dir + "meta",
-      
+          "CLOVER_HOME"     => clover_current_home,
           
           "SCRIPT_HOME"     => TOOLS_ROOT + "script",
           
