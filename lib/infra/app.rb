@@ -15,7 +15,7 @@ include FileUtils
 
 module Infra
 
-  TOOLS_ROOT              = Pathname.new('/mnt/tools')
+  TOOLS_ROOT              = Pathname.new('/mnt/ms/tools')
   CHIPMUNK_ROOT           = TOOLS_ROOT + 'chipmunk'
   PROJECTS_TEMPLATE_ROOT  = CHIPMUNK_ROOT + 'template'
   PROJECTS_ROOT           = CHIPMUNK_ROOT + 'projects'
