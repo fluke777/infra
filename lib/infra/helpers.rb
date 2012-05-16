@@ -14,9 +14,13 @@ module Infra
     end
 
     def cleanup(*args)
-      ['SOURCE_DIR', 'ESTORE_OUT_DIR', 'ESTORE_IN_DIR', 'GOODDATA_DIR'].each do |name|
-        directory = get(name)
-        FileUtils.rm_rf("#{directory}/.", :secure => true)
+      list = if args.empty?
+        ['SOURCE_DIR', 'ESTORE_OUT_DIR', 'ESTORE_IN_DIR', 'GOODDATA_DIR'].map {|n| get(n)}
+      else
+        args
+      end
+      list.each do |name|
+        FileUtils.rm_rf("#{name}/.", :secure => true)
       end
     end
 
@@ -25,34 +29,41 @@ module Infra
       run_shell("set -a; source workspace.prm; es -l load --basedir=#{basedir}")
     end
 
-    def truncate_event_store(from=get('LAST_SUCCESFULL_FINISH'))
-      # TODO: Fix the error here. It uses wrong date
+    def truncate_event_store(options={})
+      basedir = options[:basedir] || get('ESTORE_DIR')
+      from = options[:from] || get('LAST_FULL_RUN_START')
+
       if from
-        run_shell("set -a; source workspace.prm; es -l truncate --basedir=./estore --timestamp=#{from}")
+        run_shell("set -a; source workspace.prm; es -l truncate --basedir=#{basedir} --timestamp=#{from}")
       else
         logger.warn "Variable LAST_SUCCESFULL_FINISH not filled in not truncating"
       end
     end
 
-    def extract_event_store
-      run_shell("set -a; source workspace.prm; es -l extract --basedir=./estore --extractdir=./estore")
+    def extract_event_store(options={})
+      basedir = options[:basedir]       || get('ESTORE_DIR')
+      extractdir = options[:extractdir] || get('ESTORE_DIR')
+      run_shell("set -a; source workspace.prm; es -l extract --basedir=#{basedir} --extractdir=#{extractdir}")
     end
 
     def upload_data_with_cl(options = {})
-      login = get('LOGIN') || options[:login]
-      login = get('PASSWORD') || options[:password]
+      login = options[:login] || get('LOGIN')
+      pass = options[:password] || get('PASSWORD')
+      script_path = options['script'] || get('CL_SCRIPT')
 
       fail ArgumentError.new("Error in Upload_data_with_cl helper. Please define login either as parameter LOGIN in params.json or as :login option") if login.nil? || login.empty?
       fail ArgumentError.new("Error in Upload_data_with_cl helper. Please define login either as parameter PASSWORD in params.json or as :password option") if password.nil? || password.empty?
 
-      run_shell("#{get('CLTOOL_EXE')} -u#{login} -p#{password} #{get('CL_SCRIPT')}")
+      run_shell("#{get('CLTOOL_EXE')} -u#{login} -p#{password} #{script_path}")
     end
 
     def run_clover_graph(graph, options={})
-      java_options = options[:java]
+      graph_path = get('GRAPH_DIR') + graph
+      fail ArgumentError.new("Graph #{graph_path} does not exist") unless File.exist?(graph_path)
+      java_options = options[:java_options]
       java_params = java_options.nil? ? "" : "- #{java_options}"
       clover_options = options[:clover]
-      command = "#{get('CLOVER_HOME')}/clover.sh #{get('CLOVER_PARAMS')} #{get('GRAPH_DIR') + graph} #{java_params}"
+      command = "#{get('CLOVER_EXE')} #{get('CLOVER_PARAMS')} #{graph_path} #{java_params}"
       run_shell(command)
     end
 

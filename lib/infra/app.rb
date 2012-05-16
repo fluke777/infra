@@ -111,6 +111,7 @@ module Infra
                                
           "META_DIR"        => project_dir + "meta",
           "CLOVER_HOME"     => clover_current_home,
+          "CLOVER_EXE"      => clover_current_home + 'clover.sh',
           
           "SCRIPT_HOME"     => TOOLS_ROOT + "script",
           
@@ -128,7 +129,7 @@ module Infra
           "CLTOOL_HOME"     => cltool_home,
           "CLTOOL_EXE"      => cltool_home + 'gd.sh',
           
-          "CLOVER_PARAMS"   => "-nodebug -loglevel ERROR -logcfg /Users/fluke/sandbox/clover/log4j.properties -cfg #{project_dir}/#{@workspace_filename}"
+          "CLOVER_PARAMS"   => "-nodebug -loglevel ERROR -logcfg #{clover_current_home + 'log4j.properties'} -cfg #{@workspace_filename}"
 
         }
       @default_params = default_params
