@@ -26,7 +26,7 @@ module Infra
 
     def load_event_store(options={})
       basedir = options[:basedir] || get('ESTORE_DIR')
-      run_shell("set -a; source workspace.prm; es -l load --basedir=#{basedir}")
+      run_shell("set -a; source workspace.prm; /mnt/ms/bin/es -l load --basedir=#{basedir}")
     end
 
     def truncate_event_store(options={})
@@ -34,7 +34,7 @@ module Infra
       from = options[:from] || get('LAST_FULL_RUN_START')
 
       if from
-        run_shell("set -a; source workspace.prm; es -l truncate --basedir=#{basedir} --timestamp=#{from}")
+        run_shell("set -a; source workspace.prm; /mnt/ms/bin/es -l truncate --basedir=#{basedir} --timestamp=#{from}")
       else
         logger.warn "Variable LAST_SUCCESFULL_FINISH not filled in not truncating"
       end
@@ -43,7 +43,7 @@ module Infra
     def extract_event_store(options={})
       basedir = options[:basedir]       || get('ESTORE_DIR')
       extractdir = options[:extractdir] || get('ESTORE_DIR')
-      run_shell("set -a; source workspace.prm; es -l extract --basedir=#{basedir} --extractdir=#{extractdir}")
+      run_shell("set -a; source workspace.prm; /mnt/ms/bin/es -l extract --basedir=#{basedir} --extractdir=#{extractdir}")
     end
 
     def upload_data_with_cl(options = {})
