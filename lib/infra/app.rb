@@ -3,13 +3,14 @@ require 'terminal-table'
 require 'json'
 require 'time'
 require 'action_view'
-require 'active_support/time'
+require 'active_support/all'
 require 'rainbow'
 require 'open4'
 require 'fileutils'
 require 'pathname'
 require 'timecop'
-
+require 'downloader'
+require 'salesforce'
 include FileUtils
 
 
@@ -144,12 +145,21 @@ module Infra
       File.open(@workspace_filename, 'w') do |f|
         output.each {|o| f.puts o}
       end
+      output = interpolate_workspace(:quoted => true)
+      File.open('workspace.sh', 'w') do |f|
+        output.each {|o| f.puts o}
+      end
     end
 
-    def interpolate_workspace
+    def interpolate_workspace(options={})
+      quoted = options[:quoted] || false
       output = []
       @parameters.each_pair do |key, val|
-        output << "#{key}=\"#{val.to_s.gsub('"', '\"')}\""
+        if quoted
+          output << "#{key}=\"#{val.to_s.gsub('"', '\"')}\""
+        else
+          output << "#{key}=#{val}"
+        end
       end
       output
     end
@@ -348,6 +358,8 @@ module Infra
         @bail = true
         logger.info "Exit from inside of step"
       rescue StandardError => e
+        puts e.backtrace
+        logger.error e.backtrace
         logger.error e.inspect
         @error = true
       ensure

@@ -26,7 +26,7 @@ module Infra
 
     def load_event_store(options={})
       basedir = options[:basedir] || get('ESTORE_DIR')
-      run_shell("set -a; source ./workspace.prm; /mnt/ms/bin/es -l load --basedir=#{basedir}")
+      run_shell("set -a; source ./workspace.sh; /mnt/ms/bin/es -l load --basedir=#{basedir}")
     end
 
     def truncate_event_store(options={})
@@ -34,7 +34,7 @@ module Infra
       from = options[:from] || get('LAST_FULL_RUN_START')
 
       if from
-        run_shell("set -a; source ./workspace.prm; /mnt/ms/bin/es -l truncate --basedir=#{basedir} --timestamp=#{from}")
+        run_shell("set -a; source ./workspace.sh; /mnt/ms/bin/es -l truncate --basedir=#{basedir} --timestamp=#{from}")
       else
         logger.warn "Variable LAST_SUCCESFULL_FINISH not filled in not truncating"
       end
@@ -43,7 +43,7 @@ module Infra
     def extract_event_store(options={})
       basedir = options[:basedir]       || get('ESTORE_DIR')
       extractdir = options[:extractdir] || get('ESTORE_DIR')
-      run_shell("set -a; source ./workspace.prm; /mnt/ms/bin/es -l extract --basedir=#{basedir} --extractdir=#{extractdir}")
+      run_shell("set -a; source ./workspace.sh; /mnt/ms/bin/es -l extract --basedir=#{basedir} --extractdir=#{extractdir}")
     end
 
     def upload_data_with_cl(options = {})
@@ -136,6 +136,32 @@ module Infra
       
     end
 
+    def execute_dml(dml)
+      pid = get('PID')
+      GoodData.connect(get('LOGIN'), get('PASSWORD'))
+      GoodData.project = pid
+      response = GoodData.post("/gdc/md/#{pid}/dml/manage", { 'manage' => { 'maql' => dml}})
+      while (GoodData.get response['uri'])['taskState']['status'] != "OK"
+        sleep(20)
+      end
+    end
+
+    def download(options={})
+      # {
+      #   :pattern            => "data*.csv",
+      #   :exclude_pattern    => "data3.csv",
+      #   :source_dir         => "/Users/fluke/test_src",
+      #   :target_dir         => "/Users/fluke/test_dst",
+      #   :occurrence         => :true,
+      #   :check_index        => "name.idx"
+      # }
+      GDC::Downloader.download(options)
+    end
+
+    def download_from_ftp(options={})
+      fail "Not implemented"
+    end
+
     # mail(:to => email, :from => 'sf-validations@gooddata.com', :subject => "SUBJ", :body => "See attachment for details")
     def mail(options={})
       options.merge!({
@@ -145,6 +171,21 @@ module Infra
         Pony.mail(options)
       rescue
         logger.warn "Email could not be sent"
+      end
+    end
+
+    def get_deleted_records(modules)
+      to        = Time.now
+      login     = get('SFDC_USERNAME')
+      password  = get('SFDC_PASSWORD')
+      client = Salesforce::Client.new(login, password)
+      
+      modules.each do |module_name|
+        param_name = "LAST_DELETED_RECORD_#{module_name.upcase}"
+        from = get(param_name).nil? ? nil : Time.parse(get(param_name))
+        file_name = get('ESTORE_IN_DIR') + "deleted_records_#{module_name}.csv"
+        answer = client.get_deleted_records(:module => module_name, :startTime => from, :endTime => to, :output_file => file_name)
+        save(param_name, answer[1])
       end
     end
 
