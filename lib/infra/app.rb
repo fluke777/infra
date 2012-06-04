@@ -14,6 +14,15 @@ require 'salesforce'
 include FileUtils
 
 
+class String
+  def fast_xs_absorb_args(*args)
+    # binding.pry
+    fast_xs
+  end
+  alias_method :to_xs, :fast_xs_absorb_args
+end
+
+
 module Infra
 
   TOOLS_ROOT              = Pathname.new('/mnt/ms/tools')
@@ -353,11 +362,14 @@ module Infra
       begin
         result = step.run(self)
       rescue ArgumentError => e
-        fail e.inspect
+        puts e.inspect.color(:red)
+        puts e.backtrace
+        fail e
       rescue ExitException
         @bail = true
         logger.info "Exit from inside of step"
       rescue StandardError => e
+        puts e.inspect.color(:red)
         puts e.backtrace
         logger.error e.backtrace
         logger.error e.inspect

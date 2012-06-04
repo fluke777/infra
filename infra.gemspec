@@ -31,4 +31,5 @@ Gem::Specification.new do |s|
   s.add_dependency "timecop"
   s.add_dependency "pony"
   s.add_dependency "downloader"
+  s.add_dependency "gd"
 end

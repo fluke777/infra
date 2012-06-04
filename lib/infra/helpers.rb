@@ -1,4 +1,6 @@
 require 'pony'
+require 'es'
+require 'gd'
 
 module Infra
 
@@ -107,7 +109,7 @@ module Infra
       fail "SFDC password is not defined" if sfdc_pass.nil?
       fail "SFDC login is not defined" if sfdc_login.nil?
 
-      GoodData.connect(get('LOGIN'), get('PASSWORD'))
+      connect_to_gooddata
       GoodData.project = pid
 
       rforce_connection = RForce::Binding.new 'https://www.salesforce.com/services/Soap/u/20.0'
@@ -132,13 +134,49 @@ module Infra
       d.get_and_save_sfdc_reports(reports)
     end
 
-    def add_users(options={})
+    def sync_domain_with_csv(filename, options={})
+      pid = options[:pid] || get('PID')
+      domain = options[:domain]
+
+      connect_to_gooddata(options)
+      Gd::Commands::create_users_from_csv(filename, domain, pid)
+    end
+
+    def sync_domain_with_sf(options={})
+      pid = options[:pid] || get('PID')
+      login     = options[:sf_login] || get('SFDC_USERNAME')
+      password  = options[:sf_password] || get('SFDC_PASSWORD')
+      domain = options[:domain] || get('GD_DOMAIN')
+
+      fail "Please specify sf login either as a parameter sf_login to helper sync_domain_with_sf or SFDC_USERNAME param" if login.nil? || login.empty?
+      fail "Please specify sf password either as a parameter sf_password to helper sync_domain_with_sf or SFDC_PASSWORD param" if password.nil? || password.empty?
       
+      connect_to_gooddata
+      Gd::Commands::create_users_from_sf(login, password, pid, domain)
+    end
+
+    def sync_users_in_project_from_sf(options={})
+      pid = options[:pid] || get('PID')
+      login     = options[:sf_login] || get('SFDC_USERNAME')
+      password  = options[:sf_password] || get('SFDC_PASSWORD')
+      domain = options[:domain] || get('GD_DOMAIN')
+
+      connect_to_gooddata
+      Gd::Commands::sync_users_in_project_from_sf(login, password, pid, domain, options)
+
+    end
+
+    def sync_users_in_project_from_csv(file_name, options)
+      pid = options[:pid] || get('PID')
+      domain = options[:domain]
+
+      connect_to_gooddata
+      Gd::Commands::sync_users_in_project_from_csv(file_name, pid, domain, options={})
     end
 
     def execute_dml(dml)
       pid = get('PID')
-      GoodData.connect(get('LOGIN'), get('PASSWORD'))
+      connect_to_gooddata
       GoodData.project = pid
       response = GoodData.post("/gdc/md/#{pid}/dml/manage", { 'manage' => { 'maql' => dml}})
       while (GoodData.get response['uri'])['taskState']['status'] != "OK"
@@ -174,18 +212,64 @@ module Infra
       end
     end
 
+    def load_deleted_records(options={})
+      connect_to_gooddata
+      Es::Commands::load_deleted(options.merge({
+        :basedir  => get('ESTORE_DIR'),
+        :pid      => get('PID'),
+        :pid      => get('ES_NAME')
+      }))
+    end
+
+    # GET DELETED RECORDS. EXPERIMENTAL FEATURE
     def get_deleted_records(modules)
-      to        = Time.now
+      to        = Time.now.utc
       login     = get('SFDC_USERNAME')
       password  = get('SFDC_PASSWORD')
       client = Salesforce::Client.new(login, password)
-      
+
+      params = {}
+
       modules.each do |module_name|
         param_name = "LAST_DELETED_RECORD_#{module_name.upcase}"
         from = get(param_name).nil? ? nil : Time.parse(get(param_name))
-        file_name = get('ESTORE_IN_DIR') + "deleted_records_#{module_name}.csv"
+        file_name = get('ESTORE_IN_DIR') + "#{module_name}_deleted.csv"
         answer = client.get_deleted_records(:module => module_name, :startTime => from, :endTime => to, :output_file => file_name)
-        save(param_name, answer[1])
+        pp answer
+        params[param_name] = answer[1]
+      end
+      params
+    end
+
+
+    # GET UPDATED RECORDS. EXPERIMENTAL FEATURE
+    def get_updated(modules)
+      to        = Time.now.utc
+      login     = get('SFDC_USERNAME')
+      password  = get('SFDC_PASSWORD')
+      client = Salesforce::Client.new(login, password)
+
+      params = {}
+
+      modules.each do |module_name|
+        param_name = "LAST_DELETED_RECORD_#{module_name.upcase}"
+        from = get(param_name).nil? ? nil : Time.parse(get(param_name))
+        file_name = get('ESTORE_IN_DIR') + "#{module_name}_deleted.csv"
+        answer = client.get_deleted_records(:module => module_name, :startTime => from, :endTime => to, :output_file => file_name)
+        pp answer
+        params[param_name] = answer[1]
+      end
+      params
+    end
+
+    def connect_to_gooddata(login=nil, password=nil, pid=nil)
+      login = login || get('LOGIN')
+      password = password || get('PASSWORD')
+      begin
+        GoodData.connect(login, password)
+        GoodData.connection.connect!
+      rescue RestClient::BadRequest => e
+        fail "Seems like login or password for GoodData is wrong. Please verify LOGIN and PASSWORD params in params.json"
       end
     end
 
