@@ -29,10 +29,6 @@ module Infra
   CHIPMUNK_ROOT           = TOOLS_ROOT + 'chipmunk'
   PROJECTS_TEMPLATE_ROOT  = CHIPMUNK_ROOT + 'template'
   PROJECTS_ROOT           = CHIPMUNK_ROOT + 'projects'
-  
-
-  class ExitException < RuntimeError
-  end
 
   class App
 
@@ -171,10 +167,6 @@ module Infra
         end
       end
       output
-    end
-
-    def exit
-      raise ExitException.new
     end
 
     def steps
@@ -367,9 +359,7 @@ module Infra
         fail e
       rescue SystemExit => e
         @error = true if e.status != 0
-      rescue Infra::ExitException
-        @bail = true
-        logger.info "Exit from inside of step"
+        logger.info "Exit from inside of step with code #{e.status}"
       rescue StandardError => e
         puts e.inspect.color(:red)
         puts e.backtrace
