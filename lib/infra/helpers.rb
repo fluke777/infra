@@ -31,6 +31,7 @@ module Infra
       pid = get('PID')
       es_name = get('ES_NAME')
 
+      connect_to_gooddata(options)
       Es::Commands.load({
         :pid => pid,
         :es_name => es_name,
@@ -48,6 +49,8 @@ module Infra
 
       fail "Please either specify entity to be truncated or specify :all parameter in helper truncate_event_store" if entity.nil?
       entity = nil if entity.to_s == "all"
+
+      connect_to_gooddata(options)
 
       if from
         Es::Commands.truncate({
@@ -69,6 +72,8 @@ module Infra
       es_name = get('ES_NAME')
 
       fail "Please provide estore name as ES_NAME param in you params.json" if es_name.nil? || es_name.empty
+
+      connect_to_gooddata(options)
 
       Es::Commands.extract({
         :basedir    => basedir,
