@@ -44,7 +44,7 @@ module Infra
       entity = options[:entity]
       pid = get('PID')
 
-      fail "Please either specify entity to be truncated or specify :all parameter in helper truncate_event_store" if entity.empty?
+      fail "Please either specify entity to be truncated or specify :all parameter in helper truncate_event_store" if entity.nil? || entity.empty?
       entity = nil if entity.to_s == "all"
 
       if from
