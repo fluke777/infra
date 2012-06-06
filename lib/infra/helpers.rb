@@ -43,6 +43,7 @@ module Infra
       from = options[:from] || get('LAST_FULL_RUN_START')
       entity = options[:entity]
       pid = get('PID')
+      es_name = get('ES_NAME')
 
       fail "Please either specify entity to be truncated or specify :all parameter in helper truncate_event_store" if entity.nil?
       entity = nil if entity.to_s == "all"
