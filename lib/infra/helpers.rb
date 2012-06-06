@@ -70,7 +70,7 @@ module Infra
 
       Es::Commands.extract({
         :basedir    => basedir,
-        :extractdir => extractdir
+        :extractdir => extractdir,
         :pid        => get('PID'),
         :es_name    => get('ES_NAME')
       })
