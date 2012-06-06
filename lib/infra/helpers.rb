@@ -34,7 +34,8 @@ module Infra
       Es::Commands.load({
         :pid => pid,
         :es_name => es_name,
-        :basedir => basedir
+        :basedir => basedir,
+        :basedir_pattern => "gen_load*.json"
       })
     end
 
