@@ -135,7 +135,7 @@ module Infra
           "TEMP_DIR"        => data_dir + "temp",
           
           "SCRIPT_DIR"      => script_dir,
-          "CL_SCRIPT"       => script_dir + 'gd_load.script',
+          "CL_SCRIPT"       => script_dir + 'gd_load.txt',
           "CLTOOL_HOME"     => cltool_home,
           "CLTOOL_EXE"      => cltool_home + 'gdi.sh',
           
