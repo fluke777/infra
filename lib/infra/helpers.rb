@@ -28,24 +28,52 @@ module Infra
 
     def load_event_store(options={})
       basedir = options[:basedir] || get('ESTORE_DIR')
-      run_shell("set -a; source ./workspace.sh; /mnt/ms/bin/es -l load --basedir=#{basedir}")
+      pid = get('PID')
+      es_name = get('ES_NAME')
+
+      Es::Commands.load({
+        :pid => pid,
+        :es_name => es_name,
+        :basedir => basedir
+      })
     end
 
     def truncate_event_store(options={})
       basedir = options[:basedir] || get('ESTORE_DIR')
       from = options[:from] || get('LAST_FULL_RUN_START')
+      entity = options[:entity]
+      pid = get('PID')
+
+      fail "Please either specify entity to be truncated or specify :all parameter in helper truncate_event_store" if entity.empty?
+      entity = nil if entity.to_s == "all"
 
       if from
-        run_shell("set -a; source ./workspace.sh; /mnt/ms/bin/es -l truncate --basedir=#{basedir} --timestamp=#{from}")
+        Es::Commands.truncate({
+          :pid => pid,
+          :es_name => es_name,
+          :entity => entity,
+          :timestamp => from,
+          :load_filenames => basedir_pattern
+        })
       else
-        logger.warn "Variable LAST_SUCCESFULL_FINISH not filled in not truncating"
+        logger.warn "Variable LAST_FULL_RUN_START not filled in not truncating"
       end
     end
 
     def extract_event_store(options={})
       basedir = options[:basedir]       || get('ESTORE_DIR')
       extractdir = options[:extractdir] || get('ESTORE_DIR')
-      run_shell("set -a; source ./workspace.sh; /mnt/ms/bin/es -l extract --basedir=#{basedir} --extractdir=#{extractdir}")
+      pid = get('PID')
+      es_name = get('ES_NAME')
+
+      fail "Please provide estore name as ES_NAME param in you params.json" if es_name.nil? || es_name.empty
+
+      Es::Commands.extract({
+        :basedir    => basedir,
+        :extractdir => extractdir
+        :pid        => get('PID'),
+        :es_name    => get('ES_NAME')
+      })
     end
 
     def upload_data_with_cl(options = {})
