@@ -299,7 +299,12 @@ module Infra
       params
     end
 
-    def connect_to_gooddata(login=nil, password=nil, pid=nil)
+    def connect_to_gooddata(options)
+      login     = options[:login]
+      password  = options[:password]
+      pid       = options[:pid]
+      logger    = options[:logger] || Logger.new(project_root + 'log' + 'http.log', 'daily'),
+
       login = login || get('LOGIN')
       password = password || get('PASSWORD')
       begin
