@@ -304,6 +304,7 @@ module Infra
       password  = options[:password]
       pid       = options[:pid]
       logger    = options[:logger] || Logger.new(get('PROJECT_DIR') + 'log' + 'http.log', 'daily'),
+      GoodData.logger = logger
 
       login = login || get('LOGIN')
       password = password || get('PASSWORD')
