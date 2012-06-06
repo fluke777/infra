@@ -58,7 +58,8 @@ module Infra
           :es_name => es_name,
           :entity => entity,
           :timestamp => from,
-          :basedir => basedir
+          :basedir => basedir,
+          :basedir_pattern => "gen_load*.json"
         })
       else
         logger.warn "Variable LAST_FULL_RUN_START not filled in not truncating"
