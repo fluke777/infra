@@ -54,7 +54,7 @@ module Infra
           :es_name => es_name,
           :entity => entity,
           :timestamp => from,
-          :load_filenames => basedir_pattern
+          :load_filenames => basedir
         })
       else
         logger.warn "Variable LAST_FULL_RUN_START not filled in not truncating"
