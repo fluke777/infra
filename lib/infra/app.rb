@@ -358,7 +358,11 @@ module Infra
         puts e.backtrace
         fail e
       rescue SystemExit => e
-        @error = true if e.status != 0
+        if e.status != 0
+          @error = true
+        else
+          @bail = true
+        end
         logger.info "Exit from inside of step with code #{e.status}"
       rescue StandardError => e
         puts e.inspect.color(:red)
