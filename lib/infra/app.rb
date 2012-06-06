@@ -105,7 +105,7 @@ module Infra
     def initialize_params
         project_dir         = Pathname.new(@ran_in_directory).expand_path
         data_dir            = project_dir + 'data'
-        cltool_home         = TOOLS_ROOT + "cltool/bin"
+        cltool_home         = TOOLS_ROOT + "cltool/current/bin"
         script_dir          = project_dir + "script"
         clover_home         = TOOLS_ROOT + "clover"
         clover_current_home = clover_home + "current"
@@ -137,7 +137,7 @@ module Infra
           "SCRIPT_DIR"      => script_dir,
           "CL_SCRIPT"       => script_dir + 'gd_load.script',
           "CLTOOL_HOME"     => cltool_home,
-          "CLTOOL_EXE"      => cltool_home + 'gd.sh',
+          "CLTOOL_EXE"      => cltool_home + 'gdi.sh',
           
           "CLOVER_PARAMS"   => "-nodebug -loglevel ERROR -logcfg #{clover_current_home + 'log4j.properties'} -cfg #{@workspace_filename}"
 
