@@ -365,7 +365,9 @@ module Infra
         puts e.inspect.color(:red)
         puts e.backtrace
         fail e
-      rescue ExitException
+      rescue SystemExit => e
+        @error = true if e.status != 0
+      rescue Infra::ExitException
         @bail = true
         logger.info "Exit from inside of step"
       rescue StandardError => e

@@ -72,7 +72,7 @@ module Infra
       pid = get('PID')
       es_name = get('ES_NAME')
 
-      fail "Please provide estore name as ES_NAME param in you params.json" if es_name.nil? || es_name.empty
+      fail "Please provide estore name as ES_NAME param in you params.json" if es_name.nil? || es_name.empty?
 
       connect_to_gooddata()
 
