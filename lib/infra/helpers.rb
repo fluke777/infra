@@ -252,7 +252,8 @@ module Infra
       Es::Commands::load_deleted(options.merge({
         :basedir  => get('ESTORE_DIR'),
         :pid      => get('PID'),
-        :es_name  => get('ES_NAME')
+        :es_name  => get('ES_NAME'),
+        :pattern => "gen_load*.json"
       }))
     end
 
