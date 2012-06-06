@@ -299,7 +299,7 @@ module Infra
       params
     end
 
-    def connect_to_gooddata(options)
+    def connect_to_gooddata(options={})
       login     = options[:login]
       password  = options[:password]
       pid       = options[:pid]
