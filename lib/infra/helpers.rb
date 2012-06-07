@@ -186,6 +186,7 @@ module Infra
       password  = options[:sf_password] || get('SFDC_PASSWORD')
       domain = options[:domain] || get('GD_DOMAIN')
 
+      fail "Please specify domain. Either as a :domain param in helper sync_domain_with_csv or as a GD_DOMAIN in your params.json" if domain.nil? || domain.empty?
       fail "Please specify sf login either as a parameter sf_login to helper sync_domain_with_sf or SFDC_USERNAME param" if login.nil? || login.empty?
       fail "Please specify sf password either as a parameter sf_password to helper sync_domain_with_sf or SFDC_PASSWORD param" if password.nil? || password.empty?
       
@@ -199,6 +200,8 @@ module Infra
       password  = options[:sf_password] || get('SFDC_PASSWORD')
       domain = options[:domain] || get('GD_DOMAIN')
 
+      fail "Please specify domain. Either as a :domain param in helper sync_domain_with_csv or as a GD_DOMAIN in your params.json" if domain.nil? || domain.empty?
+
       connect_to_gooddata
       Gd::Commands::sync_users_in_project_from_sf(login, password, pid, domain, options)
 
@@ -206,10 +209,12 @@ module Infra
 
     def sync_users_in_project_from_csv(file_name, options)
       pid = options[:pid] || get('PID')
-      domain = options[:domain]
+      domain = options[:domain] || get('GD_DOMAIN')
+
+      fail "Please specify domain. Either as a :domain param in helper sync_domain_with_csv or as a GD_DOMAIN in your params.json" if domain.nil? || domain.empty?
 
       connect_to_gooddata
-      Gd::Commands::sync_users_in_project_from_csv(file_name, pid, domain, options={})
+      Gd::Commands::sync_users_in_project_from_csv(file_name, pid, domain, options)
     end
 
     def execute_dml(dml)
