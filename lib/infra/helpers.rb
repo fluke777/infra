@@ -172,7 +172,7 @@ module Infra
 
     def sync_domain_with_csv(filename, options={})
       pid = options[:pid] || get('PID')
-      domain = options[:domain]
+      domain = options[:domain] || get('GD_DOMAIN')
 
       connect_to_gooddata(options)
       Gd::Commands::create_users_from_csv(filename, domain, pid)
