@@ -174,6 +174,8 @@ module Infra
       pid = options[:pid] || get('PID')
       domain = options[:domain] || get('GD_DOMAIN')
 
+      fail "Please specify domain. Either as a :domain param in helper sync_domain_with_csv or as a GD_DOMAIN in your params.json" if domain.nil? || domain.empty?
+
       connect_to_gooddata(options)
       Gd::Commands::create_users_from_csv(filename, domain, pid)
     end
