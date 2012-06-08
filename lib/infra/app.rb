@@ -297,8 +297,10 @@ module Infra
         set('LAST_FULL_RUN_START',  @last_full_run_start, :silent => true)
         set('CURRENT_FULL_RUN_START', @current_full_run_start, :silent => true)
 
+        @saved_parameters = {} if @saved_parameters.nil?
         data[:params] && data[:params].each_pair do |key, val|
           set(key.to_s, val, :silent => true)
+          @saved_parameters[key] = val
         end
 
         @error = data[:application][:error]

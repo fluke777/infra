@@ -33,10 +33,11 @@ module Infra
 
       connect_to_gooddata()
       Es::Commands.load({
-        :pid => pid,
-        :es_name => es_name,
-        :basedir => basedir,
-        :pattern => "gen_load*.json"
+        :pid      => pid,
+        :es_name  => es_name,
+        :basedir  => basedir,
+        :pattern  => "gen_load*.json",
+        :only     => options[:only]
       })
     end
 
@@ -107,32 +108,25 @@ module Infra
 
     def run_shell(command)
       logger.info "Running external command '#{command}'"
-      cat = 'ruby -e"  ARGF.each{|line| STDOUT << line}  "'
       pid, stdin, stdout, stderr = Open4::popen4("sh")
       stdin.puts command
       stdin.close
       _, status = Process::waitpid2(pid)
-      output = ""
-      stdout.each_line do |line|
-        output += line
-      end
+      output = stdout.read
       $stdout.puts(output)
       logger.info(output)
 
-      error = ""
-      stderr.each_line do |line|
-        error += line
-      end
+      error = stderr.read
       $stderr.puts(error)
       logger.warn(error)
 
       if status.exitstatus == 0 
         logger.info "Finished external command '#{command}'"
+        [output.chomp, status.exitstatus]
       else
         logger.error "External command '#{command}' FAILED"
         fail "External step"
       end
-      [output.chomp, status.exitstatus]
     end
 
     def download_validations
@@ -285,9 +279,8 @@ module Infra
       params
     end
 
-
     # GET UPDATED RECORDS. EXPERIMENTAL FEATURE
-    def get_updated(modules)
+    def get_updated(definitions)
       to        = Time.now.utc
       login     = get('SFDC_USERNAME')
       password  = get('SFDC_PASSWORD')
@@ -295,13 +288,19 @@ module Infra
 
       params = {}
 
-      modules.each do |module_name|
-        param_name = "LAST_DELETED_RECORD_#{module_name.upcase}"
+      definitions.each do |module_def|
+        module_name = module_def[:module]
+        fields      = module_def[:fields]
+
+        param_name = "LAST_UPDATED_RECORD_#{module_name.upcase}"
         from = get(param_name).nil? ? nil : Time.parse(get(param_name))
-        file_name = get('ESTORE_IN_DIR') + "#{module_name}_deleted.csv"
-        answer = client.get_deleted_records(:module => module_name, :startTime => from, :endTime => to, :output_file => file_name)
+        file_name = get('ESTORE_IN_DIR') + "#{module_name}.csv"
+        answer = client.download_updated(:module => module_name, :fields => fields, :start_time => from, :end_time => to, :output_file => file_name)
+
         pp answer
-        params[param_name] = answer[1]
+        params[module_name] =  {
+          param_name => answer
+        }
       end
       params
     end
