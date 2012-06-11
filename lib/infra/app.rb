@@ -13,10 +13,9 @@ require 'downloader'
 require 'salesforce'
 include FileUtils
 
-
+# This is here because of bugs in active_support + builder + xs
 class String
   def fast_xs_absorb_args(*args)
-    # binding.pry
     fast_xs
   end
   alias_method :to_xs, :fast_xs_absorb_args
@@ -337,7 +336,7 @@ module Infra
         begin
           if @error
             @run_after_failure.each do |callback|
-              callback.call
+              callback.call(@last_exception)
             end
           else
             @run_after_success.each do |callback|
@@ -362,6 +361,7 @@ module Infra
       rescue SystemExit => e
         if e.status != 0
           @error = true
+          @last_exception = e
         else
           @bail = true
         end
@@ -372,6 +372,7 @@ module Infra
         logger.error e.backtrace
         logger.error e.inspect
         @error = true
+        @last_exception = e
       ensure
         if @error then
           logger.error("Step finished #{step.name} with error")

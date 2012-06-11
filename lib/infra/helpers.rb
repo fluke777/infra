@@ -22,7 +22,12 @@ module Infra
         args
       end
       list.each do |name|
-        FileUtils.rm_rf("#{name}/.", :secure => true)
+        FileUtils::cd(name) do
+          files = Dir.glob('*')
+          files.each do |file|
+            FileUtils.rm_rf(file, :secure => true)
+          end
+        end
       end
     end
 
