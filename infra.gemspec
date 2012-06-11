@@ -32,4 +32,5 @@ Gem::Specification.new do |s|
   s.add_dependency "pony"
   s.add_dependency "downloader"
   s.add_dependency "gd"
+  s.add_dependency "archiver"
 end

@@ -1,6 +1,7 @@
 require 'pony'
 require 'es'
 require 'gd'
+require 'archiver'
 
 module Infra
 
@@ -308,6 +309,19 @@ module Infra
         }
       end
       params
+    end
+
+    def archive_to_s3
+      bucket_name = "gooddata_com_#{get('CUSTOMER')}_#{get('PROJECT')}"
+      binding.pry
+      GDC::Archiver.archive({
+        :source_dir          => get('SOURCE_DIR'),
+        :store_to_s3         => true,
+        :logger              => logger,
+        :bucket_name         => bucket_name,
+        :s3_credentials_file => ".s3cfg"
+      })
+
     end
 
     def connect_to_gooddata(options={})
