@@ -113,18 +113,21 @@ module Infra
     end
 
     def run_shell(command)
-      logger.info "Running external command '#{command}'"
-      pid, stdin, stdout, stderr = Open4::popen4("sh")
-      stdin.puts command
-      stdin.close
-      _, status = Process::waitpid2(pid)
-      output = stdout.read
-      $stdout.puts(output)
-      logger.info(output)
 
-      error = stderr.read
-      $stderr.puts(error)
-      logger.warn(error)
+      logger.info "Running external command '#{command}'"
+
+      status = Open4::popen4("sh") do |pid, stdin, stdout, stderr|
+        stdin.puts command
+        stdin.close
+        output = stdout.read
+        $stdout.puts(output)
+        logger.info(output)
+        error = stderr.read
+        $stderr.puts(error)
+        logger.warn(error)
+      end
+        puts "status     : #{ status.inspect }"
+        puts "exitstatus : #{ status.exitstatus }"
 
       if status.exitstatus == 0 
         logger.info "Finished external command '#{command}'"
