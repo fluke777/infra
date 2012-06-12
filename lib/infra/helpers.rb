@@ -116,6 +116,9 @@ module Infra
 
       logger.info "Running external command '#{command}'"
 
+      output = nil
+      error  = nil
+
       status = Open4::popen4("sh") do |pid, stdin, stdout, stderr|
         stdin.puts command
         stdin.close
@@ -126,8 +129,6 @@ module Infra
         $stderr.puts(error)
         logger.warn(error)
       end
-        puts "status     : #{ status.inspect }"
-        puts "exitstatus : #{ status.exitstatus }"
 
       if status.exitstatus == 0 
         logger.info "Finished external command '#{command}'"
