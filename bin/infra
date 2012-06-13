@@ -75,8 +75,12 @@ pre do |global,command,options,args|
 
   fail "You do not seem to be in a project directory. App definition #{app_file} is missing." unless File.exist?(project_root + app_file)
 
+  pid = File.read(project_root + 'pid').chomp
+
   params = JSON.parse(File.read(project_root + params_file))
-  params.merge!({"PID" => File.read(project_root + 'pid').chomp})
+  params.merge!({"PID" => pid})
+  params.merge!({"PROJECT_URI" => "/gdc/projects/#{pid}"})
+  params.merge!({"PROJECT_NAME" => params["CUSTOMER"]})
 
   APP = Infra::App.new({
     :logger           => Logger.new(project_root + 'log' + 'run.log', 'daily'),

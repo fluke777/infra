@@ -104,6 +104,7 @@ module Infra
         script_dir          = project_dir + "script"
         clover_home         = TOOLS_ROOT + "clover"
         clover_current_home = clover_home + "current"
+        source_dir          = data_dir + "source"
         
         default_params = {
           "PROJECTS_ROOT"   => PROJECTS_ROOT,
@@ -121,7 +122,7 @@ module Infra
           "SCRIPT_HOME"     => TOOLS_ROOT + "script",
           
           "DATA_DIR"        => data_dir,
-          "SOURCE_DIR"      => data_dir + "source",
+          "SOURCE_DIR"      => source_dir,
           "ESTORE_IN_DIR"   => data_dir + "estore-in",
           "ESTORE_OUT_DIR"  => data_dir + "estore-out",
           "TRANSFORM_DIR"   => data_dir + "transform",
@@ -134,7 +135,8 @@ module Infra
           "CLTOOL_HOME"     => cltool_home,
           "CLTOOL_EXE"      => cltool_home + 'gdi.sh',
           
-          "CLOVER_PARAMS"   => "-nodebug -loglevel ERROR -logcfg #{clover_current_home + 'log4j.properties'} -cfg #{@workspace_filename}"
+          "CLOVER_PARAMS"   => "-nodebug -loglevel ERROR -logcfg #{clover_current_home + 'log4j.properties'} -cfg #{@workspace_filename}",
+          "SFDC_DOWNLOAD_DIR" => source_dir
 
         }
       @default_params = default_params
