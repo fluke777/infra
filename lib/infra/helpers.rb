@@ -345,5 +345,37 @@ module Infra
       end
     end
 
+    def download_from_SFDC(timestamp=nil)
+      logger.info "SFDC downloader helper START"
+      time = nil
+      unless timestamp.nil?
+        begin
+          time = Time.at(timestamp)
+        rescue => e
+          fail "Timestamp in helper download_from_SFDC is not nil but it cannot be converteinto valid time"
+        end
+      end
+
+      is_incremental = get('SFDC_INCREMENTAL_DOWNLOAD')
+      fail "SFDC_INCREMENTAL_DOWNLOAD has to be \"true\" or \"false\" in params.json" if is_incremental != "true" && is_incremental != "false"
+
+      if time.nil? && is_incremental == "true"
+        time = Time.at(get('LAST_FULL_RUN_START'))
+      end
+
+      if time.nil? && is_incremental == "false"
+        begin
+          time = Date.strptime(get('DATA_BIRTHDAY'), '%Y-%m-%d').to_time
+        rescue
+          fail "DATA_BIRTHDAY has wrong format (should have '%Y-%m-%d') or is not set in params.json"
+        end
+      end
+
+      logger.info("Downloader started. Downloading from: #{time.utc}")
+      set("SFDC_DOWNLOAD_START_DATE", time.utc.iso8601)
+      run_shell("#{get('PROJECT_DIR') + 'downloader/bin/download.sh'} #{get('PROJECT_DIR') + 'workspace.prm'}")
+      logger.info("SFDC downloader END")
+    end
+
   end
 end
