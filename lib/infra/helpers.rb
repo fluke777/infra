@@ -130,7 +130,6 @@ module Infra
 
       logger.info(output)
       logger.warn(error)
-      logger.warn"DONE"
 
       if status.exitstatus == 0
         logger.info "Finished external command '#{command}'"
