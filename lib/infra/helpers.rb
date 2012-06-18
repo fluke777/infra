@@ -380,5 +380,12 @@ module Infra
       logger.info("SFDC downloader END")
     end
 
+    def mail_to_pager_duty
+      customer    = get('CUSTOMER')
+      project     = get('PROJECT')
+
+      mail(:to => clover@gooddata.pagerduty.com, :from => 'sf-validations@gooddata.com', :subject => "#{customer} #{project} failed")
+    end
+
   end
 end
