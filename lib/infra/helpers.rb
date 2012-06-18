@@ -124,13 +124,15 @@ module Infra
         stdin.close
         output = stdout.read
         $stdout.puts(output)
-        logger.info(output)
         error = stderr.read
         $stderr.puts(error)
-        logger.warn(error)
       end
 
-      if status.exitstatus == 0 
+      logger.info(output)
+      logger.warn(error)
+      logger.warn"DONE"
+
+      if status.exitstatus == 0
         logger.info "Finished external command '#{command}'"
         [output.chomp, status.exitstatus]
       else
