@@ -384,7 +384,7 @@ module Infra
       customer    = get('CUSTOMER')
       project     = get('PROJECT')
 
-      mail(:to => clover@gooddata.pagerduty.com, :from => 'sf-validations@gooddata.com', :subject => "#{customer} #{project} failed")
+      mail(:to => "clover@gooddata.pagerduty.com", :from => 'sf-validations@gooddata.com', :subject => "#{customer} #{project} failed")
     end
 
   end
