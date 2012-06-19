@@ -374,8 +374,7 @@ module Infra
 
       logger.info("Downloader started. Downloading from: #{time.utc}")
       set("SFDC_DOWNLOAD_START_DATE", time.utc.iso8601)
-      system("#{get('PROJECT_DIR') + 'downloader/bin/download.sh'} #{get('PROJECT_DIR') + 'workspace.prm'}")
-      fail "Downloader failed" if $?.exitstatus != 0
+      run_shell("#{get('PROJECT_DIR') + 'downloader/bin/download.sh'} #{get('PROJECT_DIR') + 'workspace.prm'}")
       logger.info("SFDC downloader END")
     end
 
