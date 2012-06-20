@@ -361,7 +361,11 @@ module Infra
       fail "SFDC_INCREMENTAL_DOWNLOAD has to be \"true\" or \"false\" in params.json" if is_incremental != "true" && is_incremental != "false"
 
       if time.nil? && is_incremental == "true"
-        time = Time.at(get('LAST_FULL_RUN_START'))
+        begin
+          time = Time.at(get('LAST_FULL_RUN_START'))
+        rescue => e
+          fail "You are trying to do an incremental upload but the LAST_FULL_RUN_START is not set. This looks like you have never run the app before. Consider doing full upload of data."
+        end
       end
 
       if time.nil? && is_incremental == "false"

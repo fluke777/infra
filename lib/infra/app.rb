@@ -199,7 +199,18 @@ module Infra
      @error = false
      @bail = false
      @current_full_run_start = Time.now.to_i
+
+     log_banner("New run started")
      run_steps(steps)
+    end
+
+    def log_banner(message)
+      logger.info ""
+      logger.info ""
+      l = message.length + 4
+      logger.info "=" * l
+      logger.info "= #{message} ="
+      logger.info "=" * l
     end
 
     def step_by_name(name)
@@ -229,7 +240,7 @@ module Infra
     
     def restart_from_last_checkpoint
       s = propose_restart_point
-      logger.info "Restarted from last checkpoint #{s.name}"
+      log_banner("Restarted from last checkpoint - running from step \"#{s.name}\"")
       restart_from_step(s)
     end
 
