@@ -43,7 +43,8 @@ module Infra
         :es_name  => es_name,
         :basedir  => basedir,
         :pattern  => "gen_load*.json",
-        :only     => options[:only]
+        :only     => options[:only],
+        :logger   => logger
       })
     end
 
@@ -66,7 +67,8 @@ module Infra
           :entity => entity,
           :timestamp => from,
           :basedir => basedir,
-          :basedir_pattern => "gen_load*.json"
+          :basedir_pattern => "gen_load*.json",
+          :logger => logger
         })
       else
         logger.warn "Variable LAST_FULL_RUN_START not filled in not truncating"
@@ -87,7 +89,8 @@ module Infra
         :basedir    => basedir,
         :extractdir => extractdir,
         :pid        => get('PID'),
-        :es_name    => get('ES_NAME')
+        :es_name    => get('ES_NAME'),
+        :logger     => logger
       })
     end
 
@@ -266,7 +269,8 @@ module Infra
         :basedir  => get('ESTORE_DIR'),
         :pid      => get('PID'),
         :es_name  => get('ES_NAME'),
-        :pattern => "gen_load*.json"
+        :pattern  => "gen_load*.json",
+        :logger   => logger
       }))
     end
 
