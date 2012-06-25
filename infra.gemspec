@@ -33,4 +33,6 @@ Gem::Specification.new do |s|
   s.add_dependency "downloader"
   s.add_dependency "gd"
   s.add_dependency "archiver"
+  s.add_dependency "sfdc_tests"
+  s.add_dependency "es"
 end
