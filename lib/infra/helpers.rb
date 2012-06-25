@@ -2,6 +2,7 @@ require 'pony'
 require 'es'
 require 'gd'
 require 'archiver'
+require 'sfdc_tests'
 
 module Infra
 
@@ -149,34 +150,77 @@ module Infra
       pid         = get('PID')
       sfdc_login  = get('SFDC_USERNAME')
       sfdc_pass   = get('SFDC_PASSWORD')
-
+      
       fail "SFDC password is not defined" if sfdc_pass.nil?
       fail "SFDC login is not defined" if sfdc_login.nil?
-
+      
       connect_to_gooddata
       GoodData.project = pid
-
+      
       rforce_connection = RForce::Binding.new 'https://www.salesforce.com/services/Soap/u/20.0'
       rforce_connection.login sfdc_login, sfdc_pass
-
+      
       options = {
-        :save_to            => "./validations/sf_results/#{customer}/#{project}",
-        :mail_path          => "./validations/out/#{customer}/#{project}/mail.txt",
-        :splunk_path        => "./validations/out/#{customer}/#{project}/splunk.txt",
-        :json_path          => "./validations/out/#{customer}/#{project}/json.json",
+        :save_to            => (get('PROJECT_DIR') + "validations/sf_results").to_s,
+        :mail_path          => (get('PROJECT_DIR') + "validations/out" + "mail.txt").to_s,
+        :splunk_path        => (get('PROJECT_DIR') + "validations/out" + "splunk.txt").to_s,
+        :json_path          => (get('PROJECT_DIR') + "validations/out" + "json.json").to_s,
         :pid                => pid,
         :rforce_connection  => rforce_connection,
         :project            => GoodData.project,
         :ms_project_name    => "#{customer}-#{project}"
       }
-
+      
       d = GoodData::SfdcTests::ReportDownloader.new(options)
       reports = d.get_reports_for_validation
-      # if cmd_options[:verbose]
-      #   reports.each {|r| puts r.title}
-      # end
+      
       d.get_and_save_sfdc_reports(reports)
     end
+
+    def report_validations(options={})
+      customer    = get('CUSTOMER')
+      project     = get('PROJECT')
+      pid         = get('PID')
+      sfdc_login  = get('SFDC_USERNAME')
+      sfdc_pass   = get('SFDC_PASSWORD')
+      email_from  = options[:email_from] || "sf-validations@gooddata.com"
+      email_to    = options[:email_to] || "ps-etl+clover@gooddata.com"
+      
+      fail "SFDC password is not defined" if sfdc_pass.nil?
+      fail "SFDC login is not defined" if sfdc_login.nil?
+      
+      connect_to_gooddata
+      GoodData.project = pid
+      
+      rforce_connection = RForce::Binding.new 'https://www.salesforce.com/services/Soap/u/20.0'
+      rforce_connection.login sfdc_login, sfdc_pass
+      
+      options = {
+        :save_to            => (get('PROJECT_DIR') + "validations/sf_results").to_s,
+        :mail_path          => (get('PROJECT_DIR') + "validations/out" + "mail.txt").to_s,
+        :splunk_path        => (get('PROJECT_DIR') + "validations/out" + "splunk.txt").to_s,
+        :json_path          => (get('PROJECT_DIR') + "validations/out" + "json.json").to_s,
+        :pid                => pid,
+        :rforce_connection  => rforce_connection,
+        :project            => GoodData.project,
+        :ms_project_name    => "#{customer}-#{project}"
+      }
+      
+      d = GoodData::SfdcTests::ReportDownloader.new(options)
+      r = GoodData::SfdcTests::Runner.new(d, options)
+      r.generate_example_group(options[:project])
+      
+      result = r.run ["--format", "EmailFormatter", "-o", options[:mail_path], "--format", "SplunkFormatter", "-o", options[:splunk_path], "--format", "JsonFormatter", "-o", options[:json_path]]
+      
+      result_subject = result == 0 ? "OK" : "ERROR"
+    
+      Pony.mail(:to => email_to, :from => email_from, :subject => "#{result_subject} - #{customer}/#{project} Validation", :body => "See attachment for details", :attachments => {"mail.txt" => File.read(options[:mail_path])})
+      
+      File.open('/mnt/log/gdc-clover', 'a') do |f|
+        f.write File.read(options[:splunk_path])
+      end
+    end
+
 
     def sync_domain_with_csv(filename, options={})
       pid = options[:pid] || get('PID')
