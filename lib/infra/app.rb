@@ -111,6 +111,7 @@ module Infra
           "TOOLS_DIR"       => TOOLS_ROOT,
           "PROJECT_DIR"     => project_dir,
           "LOG_PATH"        => project_dir + "log",
+          "LOG_DIR"        => project_dir + "log",
           "CONFIG_DIR"      => project_dir + "config",
           "ESTORE_DIR"      => project_dir + "estore",
           "GRAPH_DIR"       => project_dir + "graph",

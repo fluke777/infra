@@ -112,7 +112,7 @@ module Infra
       java_options = options[:java_options]
       java_params = java_options.nil? ? "" : "- #{java_options}"
       clover_options = options[:clover]
-      command = "#{get('CLOVER_EXE')} #{get('CLOVER_PARAMS')} #{graph_path} #{java_params}"
+      command = "set -a; source workspace.sh;#{get('CLOVER_EXE')} #{get('CLOVER_PARAMS')} #{graph_path} #{java_params}"
       run_shell(command)
     end
 
