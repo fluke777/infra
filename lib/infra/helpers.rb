@@ -433,8 +433,9 @@ module Infra
     def mail_to_pager_duty
       customer    = get('CUSTOMER')
       project     = get('PROJECT')
-
-      mail(:to => "clover@gooddata.pagerduty.com", :from => 'sf-validations@gooddata.com', :subject => "#{customer} #{project} failed")
+      hostname    = `hostname`.chomp 
+      
+      mail(:to => "clover@gooddata.pagerduty.com", :from => 'sf-validations@gooddata.com', :subject => "#{hostname}: #{customer} - #{project} ETL error")
     end
 
   end
