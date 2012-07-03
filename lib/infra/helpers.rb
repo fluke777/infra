@@ -434,8 +434,10 @@ module Infra
       customer    = get('CUSTOMER')
       project     = get('PROJECT')
       hostname    = `hostname`.chomp 
+      last_step       = steps.detect {|i| i.ran && !i.finished}
+      last_step_name  = last_step ? last_step.name : "unknown"
       
-      mail(:to => "clover@gooddata.pagerduty.com", :from => 'sf-validations@gooddata.com', :subject => "#{hostname}: #{customer} - #{project} ETL error")
+      mail(:to => "clover@gooddata.pagerduty.com", :from => 'root@gooddata.com', :subject => "#{hostname}: #{customer} - #{project} ETL error", :body => "Error occured during #{last_step_name} step. Error: #{@last_exception.inspect}")
     end
 
   end
