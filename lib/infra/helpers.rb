@@ -366,7 +366,6 @@ module Infra
 
     def archive_to_s3
       bucket_name = "gooddata_com_#{get('CUSTOMER')}_#{get('PROJECT')}"
-      binding.pry
       GDC::Archiver.archive({
         :source_dir          => get('SOURCE_DIR'),
         :store_to_s3         => true,
