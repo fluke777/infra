@@ -36,7 +36,7 @@ module Infra
     include Infra::Helpers
 
     def initialize(options = {})
-      @sequence = [:clean_up, :download, :preformat, :pre_es_transform, :es_load, :es_extract, :post_es_format, :transform, :upload, :sync_users, :validation]
+      @sequence = [:clean_up, :download, :preformat, :pre_es_transform, :es_load, :es_extract, :post_es_format, :transform, :upload, :sync_users, :validation, :archive]
       @step_blocks = {}
       @logger = options[:logger]
       @error = false
