@@ -371,7 +371,7 @@ module Infra
         :store_to_s3         => true,
         :logger              => logger,
         :bucket_name         => bucket_name,
-        :s3_credentials_file => ".s3cfg"
+        :s3_credentials_file => "~/.s3cfg"
       })
 
     end
