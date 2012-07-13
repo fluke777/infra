@@ -286,8 +286,10 @@ module Infra
       #   :source_dir         => "/Users/fluke/test_src",
       #   :target_dir         => "/Users/fluke/test_dst",
       #   :occurrence         => :true,
-      #   :check_index        => "name.idx"
+      #   :file_list          => ["file.txt","file2.txt"]
       # }
+      options[:source_dir] = get('SOURCE') if options[:source_dir].nil?
+      options[:target_dir] = get('SOURCE_DIR') if options[:target_dir].nil?
       GDC::Downloader.download(options)
     end
 
