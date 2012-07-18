@@ -11,6 +11,7 @@ require 'pathname'
 require 'timecop'
 require 'downloader'
 require 'salesforce'
+require 'psql_logger'
 include FileUtils
 
 # This is here because of bugs in active_support + builder + xs
@@ -31,7 +32,7 @@ module Infra
 
   class App
 
-    attr_accessor :logger, :error, :sequence, :ran, :last_successful_start, :last_successful_finish, :last_attempt, :bail, :saved_parameters, :last_full_run_start, :current_full_run_start
+    attr_accessor :logger, :psql_logger, :error, :sequence, :ran, :last_successful_start, :last_successful_finish, :last_attempt, :bail, :saved_parameters, :last_full_run_start, :current_full_run_start, :is_production
 
     include Infra::Helpers
 
@@ -39,6 +40,7 @@ module Infra
       @sequence = [:clean_up, :download, :preformat, :pre_es_transform, :es_load, :es_extract, :post_es_format, :transform, :upload, :sync_users, :validation, :archive]
       @step_blocks = {}
       @logger = options[:logger]
+      @psql_logger = options[:psql_logger]
       @error = false
       @ran = false
       @bail = false
@@ -49,6 +51,7 @@ module Infra
       @custom_params = options[:params] || {}
       @run_after_failure = []
       @run_after_success = []
+      @is_production = !!options[:is_production]
       initialize_params
     end
 
@@ -137,7 +140,8 @@ module Infra
           "CLTOOL_EXE"      => cltool_home + 'gdi.sh',
           
           "CLOVER_PARAMS"   => "-nodebug -loglevel ERROR -logcfg #{clover_current_home + 'log4j.properties'} -cfg #{@workspace_filename}",
-          "SFDC_DOWNLOAD_DIR" => source_dir
+          "SFDC_DOWNLOAD_DIR" => source_dir,
+          "INFRA_ENVIRONMENT" => @is_production ? "PRODUCTION" : "DEVELOPMENT"
 
         }
       @default_params = default_params
@@ -202,6 +206,7 @@ module Infra
      @current_full_run_start = Time.now.to_i
 
      log_banner("New run started")
+     @psql_logger.log_start() if do_psql_log?
      run_steps(steps)
     end
 
@@ -242,6 +247,7 @@ module Infra
     def restart_from_last_checkpoint
       s = propose_restart_point
       log_banner("Restarted from last checkpoint - running from step \"#{s.name}\"")
+      @psql_logger.log_start() if do_psql_log?
       restart_from_step(s)
     end
 
@@ -326,6 +332,10 @@ module Infra
         end
       end
     end
+    
+    def do_psql_log?
+      @is_production && !@psql_logger.nil?
+    end
 
     private
     def run_steps(steps_to_run)
@@ -356,6 +366,7 @@ module Infra
             @run_after_success.each do |callback|
               callback.call
             end
+            @psql_logger.log_end() if do_psql_log?
           end
         ensure
           FileUtils.rm_f('running.pid')
@@ -365,6 +376,7 @@ module Infra
     
     def run_step(step)
       logger.info "Step started #{step.name}"
+      @psql_logger.log_step_start(step.name) if do_psql_log?
       write_workspace unless @workspace_filename.nil?
       begin
         result = step.run(self)
@@ -390,8 +402,10 @@ module Infra
       ensure
         if @error then
           logger.error("Step finished #{step.name} with error")
+          @psql_logger.log_error(step.name, @last_exception.message) if do_psql_log?
         else
           logger.info("Step finished #{step.name}")
+          @psql_logger.log_step_start(step.name) if do_psql_log?
         end
       end
     end

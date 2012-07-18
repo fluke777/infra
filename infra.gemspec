@@ -35,4 +35,6 @@ Gem::Specification.new do |s|
   s.add_dependency "archiver"
   s.add_dependency "sfdc_tests"
   s.add_dependency "es"
+  s.add_dependency "inifile"
+  s.add_dependency "psql_logger"
 end

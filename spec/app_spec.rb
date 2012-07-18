@@ -182,7 +182,7 @@ describe Infra::App do
     
     app.sequence.each {|name| app.step(name) {}}
     step = app.step_by_name(:preformat)
-    app.steps_from(step).map {|step| step.name.to_sym }.should == [:preformat, :pre_es_transform, :es_load, :es_extract, :transform, :upload, :sync_users, :validation]
+    app.steps_from(step).map {|step| step.name.to_sym }.should == [:preformat, :pre_es_transform, :es_load, :es_extract, :post_es_format, :transform, :upload, :sync_users, :validation, :archive]  
   end
 
   it "should run only steps that were not already ran" do
@@ -192,7 +192,7 @@ describe Infra::App do
     app.step(:transform) { fail }
 
     app.run
-    app.ran_steps.count.should == 7
+    app.ran_steps.count.should == 8
     restart_point = app.propose_restart_point
     restart_point.should == app.step_by_name(:es_load)
 
@@ -204,7 +204,7 @@ describe Infra::App do
     restart_point.should_receive(:run)
 
     app.restart_from_last_checkpoint
-    app.ran_steps.count.should == 10
+    app.ran_steps.count.should == 12
   end
 
   it "should mark the app as ran when it is run" do

@@ -373,7 +373,7 @@ module Infra
         :store_to_s3         => true,
         :logger              => logger,
         :bucket_name         => bucket_name,
-        :s3_credentials_file => "~/.s3cfg"
+        :s3_credentials_file => "/mnt/ms/.s3cfg"
       })
 
     end
@@ -431,14 +431,15 @@ module Infra
       logger.info("SFDC downloader END")
     end
 
-    def mail_to_pager_duty
+    def mail_to_pager_duty()
       customer    = get('CUSTOMER')
       project     = get('PROJECT')
       hostname    = `hostname`.chomp 
       last_step       = steps.detect {|i| i.ran && !i.finished}
       last_step_name  = last_step ? last_step.name : "unknown"
+      message     = @last_exception ?  @last_exception.inspect : "unknown"
       
-      mail(:to => "clover@gooddata.pagerduty.com", :from => 'root@gooddata.com', :subject => "#{hostname}: #{customer} - #{project} ETL error", :body => "Error occured during #{last_step_name} step. Error: #{@last_exception.inspect}")
+      mail(:to => "clover@gooddata.pagerduty.com", :from => 'root@gooddata.com', :subject => "#{hostname}: #{customer} - #{project} ETL error", :body => "Error occured during #{last_step_name} step. Error: #{message}")
     end
 
   end

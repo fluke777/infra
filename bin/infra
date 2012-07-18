@@ -14,8 +14,10 @@ $: << File.expand_path(File.dirname(File.realpath(__FILE__)) + '/../lib')
 require 'rubygems'
 require 'gli'
 require 'logger'
+require 'psql_logger'
 require 'gooddata'
 require 'pathname'
+require 'inifile'
 require 'infra'
 require 'downloader'
 include GLI
@@ -87,10 +89,19 @@ pre do |global,command,options,args|
     :home_directory   => project_root,
     :run_params_file  => project_root + run_params_file,
     :workspace_file   => project_root + workspace_file,
+    :is_production    => ENV['EC2DATA_STATUS'] == "prod",
     :params           => params
   })
 
   APP.instance_eval(File.read(project_root + app_file))
+  if APP.is_production
+    APP.after_failure do
+      APP.mail_to_pager_duty
+    end
+    psini = IniFile.new(Pathname.new('/mnt/ms/.postgres2cfg').expand_path, :parameter => '=' )
+    psini = psini[:default]
+    APP.psql_logger = GDC::PsqlLogger.new(psini[:hostname], psini[:dbname], psini[:user], psini[:password], "#{pid}")
+  end
   APP.initialize_params
   APP.awake
   GUI = Infra::AppGUI.new(APP)
