@@ -405,7 +405,7 @@ module Infra
           @psql_logger.log_error(step.name, @last_exception.message) if do_psql_log?
         else
           logger.info("Step finished #{step.name}")
-          @psql_logger.log_step_start(step.name) if do_psql_log?
+          @psql_logger.log_step_end(step.name) if do_psql_log?
         end
       end
     end

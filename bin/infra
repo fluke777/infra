@@ -100,7 +100,7 @@ pre do |global,command,options,args|
     end
     psini = IniFile.new(Pathname.new('/mnt/ms/.postgres2cfg').expand_path, :parameter => '=' )
     psini = psini[:default]
-    APP.psql_logger = GDC::PsqlLogger.new(psini[:hostname], psini[:dbname], psini[:user], psini[:password], "#{pid}")
+    APP.psql_logger = GDC::PsqlLogger.new(psini["host"], psini["dbname"], psini["user"], psini["password"], "#{pid}")
   end
   APP.initialize_params
   APP.awake
