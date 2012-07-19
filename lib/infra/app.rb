@@ -206,7 +206,7 @@ module Infra
      @current_full_run_start = Time.now.to_i
 
      log_banner("New run started")
-     @psql_logger.log_start() if do_psql_log?
+     log_to_psql("log_start")
      run_steps(steps)
     end
 
@@ -247,7 +247,7 @@ module Infra
     def restart_from_last_checkpoint
       s = propose_restart_point
       log_banner("Restarted from last checkpoint - running from step \"#{s.name}\"")
-      @psql_logger.log_start() if do_psql_log?
+      log_to_psql("log_start")
       restart_from_step(s)
     end
 
@@ -332,12 +332,20 @@ module Infra
         end
       end
     end
-    
+
+    private
     def do_psql_log?
       @is_production && !@psql_logger.nil?
     end
-
-    private
+    
+    def log_to_psql(method, *params)
+      begin
+        @psql_logger.send(method, *params) if do_psql_log?
+      rescue Exception => e
+        logger.error("Log to postgres2 failed with message: #{e.message}")
+      end
+    end
+    
     def run_steps(steps_to_run)
       fail "ETL is already runnning" if File.exist?('running.pid')
       begin
@@ -366,7 +374,7 @@ module Infra
             @run_after_success.each do |callback|
               callback.call
             end
-            @psql_logger.log_end() if do_psql_log?
+            log_to_psql("log_end")
           end
         ensure
           FileUtils.rm_f('running.pid')
@@ -376,7 +384,7 @@ module Infra
     
     def run_step(step)
       logger.info "Step started #{step.name}"
-      @psql_logger.log_step_start(step.name) if do_psql_log?
+      log_to_psql("log_step_start", step.name)
       write_workspace unless @workspace_filename.nil?
       begin
         result = step.run(self)
@@ -402,10 +410,10 @@ module Infra
       ensure
         if @error then
           logger.error("Step finished #{step.name} with error")
-          @psql_logger.log_error(step.name, @last_exception.message) if do_psql_log?
+          log_to_psql("log_error", step.name, @last_exception.message)
         else
           logger.info("Step finished #{step.name}")
-          @psql_logger.log_step_end(step.name) if do_psql_log?
+          log_to_psql("log_step_end", step.name)
         end
       end
     end
