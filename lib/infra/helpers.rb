@@ -388,7 +388,9 @@ module Infra
       login = login || get('LOGIN')
       password = password || get('PASSWORD')
       begin
-        GoodData.connect(login, password)
+        GoodData.connect(login, password, nil, {
+          :timeout => 0
+        })
         GoodData.connection.connect!
       rescue RestClient::BadRequest => e
         fail "Seems like login or password for GoodData is wrong. Please verify LOGIN and PASSWORD params in params.json"
