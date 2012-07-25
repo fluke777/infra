@@ -293,8 +293,14 @@ module Infra
       GDC::Downloader.download(options)
     end
 
-    def download_from_ftp(options={})
-      fail "Not implemented"
+    def download_from_sftp(options={})
+      options[:server]    = get('SFTP_SERVER')
+      options[:password]  = get('PASSWORD')
+      options[:login]     = get('LOGIN')
+      options[:pid]       = get('PID')
+      options[:target_dir]= get('SOURCE_DIR')
+      options[:pattern]   = get('SFTP_PATTERN')
+      GDC::SftpDownloader.download(options)
     end
 
     # mail(:to => email, :from => 'sf-validations@gooddata.com', :subject => "SUBJ", :body => "See attachment for details")
@@ -433,15 +439,15 @@ module Infra
       logger.info("SFDC downloader END")
     end
 
-    def mail_to_pager_duty()
+    def mail_to_pager_duty(step = "", message = "")
       customer    = get('CUSTOMER')
       project     = get('PROJECT')
       hostname    = `hostname`.chomp 
-      last_step       = steps.detect {|i| i.ran && !i.finished}
-      last_step_name  = last_step ? last_step.name : "unknown"
-      message     = @last_exception ?  @last_exception.inspect : "unknown"
+      last_step   = steps.detect {|i| i.ran && !i.finished}
+      step        = (last_step ? last_step.name : "unknown") if (step.nil? || step.empty?)
+      message     = (@last_exception ?  @last_exception.inspect : "unknown") if (message.nil? || message.empty?)
       
-      mail(:to => "clover@gooddata.pagerduty.com", :from => 'root@gooddata.com', :subject => "#{hostname}: #{customer} - #{project} ETL error", :body => "Error occured during #{last_step_name} step. Error: #{message}")
+      mail(:to => "clover@gooddata.pagerduty.com", :from => 'root@gooddata.com', :subject => "#{hostname}: #{customer} - #{project} ETL error", :body => "Error occured during #{step} step. Error: #{message}")
     end
 
   end

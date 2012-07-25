@@ -343,6 +343,8 @@ module Infra
         @psql_logger.send(method, *params) if do_psql_log?
       rescue Exception => e
         logger.error("Log to postgres2 failed with message: #{e.message}")
+        mail_to_pager_duty("log to psql", "Log to postgres2 failed with message: #{e.message}") unless !!@psql_error_sent
+        @psql_error_sent = true
       end
     end
     
