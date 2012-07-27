@@ -104,7 +104,7 @@ pre do |global,command,options,args|
     else
       psini = IniFile.new(Pathname.new(psql_config_file).expand_path, :parameter => '=' )
       psini = psini[:default]
-      #APP.psql_logger = GDC::PsqlLogger.new(psini["host"], psini["dbname"], psini["user"], psini["password"], "#{pid}")
+      APP.psql_logger = GDC::PsqlLogger.new(psini["host"], psini["dbname"], psini["user"], psini["password"], "#{pid}")
     end
   end
   APP.initialize_params
