@@ -294,12 +294,12 @@ module Infra
     end
 
     def download_from_sftp(options={})
-      options[:server]    = get('SFTP_SERVER')
-      options[:password]  = get('PASSWORD')
-      options[:login]     = get('LOGIN')
-      options[:pid]       = get('PID')
-      options[:target_dir]= get('SOURCE_DIR')
-      options[:pattern]   = get('SFTP_PATTERN')
+      options[:server]          = get('SFTP_SERVER')
+      options[:password]        = get('PASSWORD')
+      options[:login]           = get('LOGIN')
+      options[:pid]             = get('PID')
+      options[:target_dir]      = get('SOURCE_DIR')
+      options[:pattern]         = "*.zip" if options[:pattern].nil?
       GDC::SftpDownloader.download(options)
     end
 
