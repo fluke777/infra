@@ -99,11 +99,14 @@ module Infra
       login         = options[:login] || get('LOGIN')
       password      = options[:password] || get('PASSWORD')
       script_path   = options['script'] || get('CL_SCRIPT')
+      host          = options[:cl_host] || get('CL_HOST')
 
       fail ArgumentError.new("Error in Upload_data_with_cl helper. Please define login either as parameter LOGIN in params.json or as :login option") if login.nil? || login.empty?
       fail ArgumentError.new("Error in Upload_data_with_cl helper. Please define login either as parameter PASSWORD in params.json or as :password option") if password.nil? || password.empty?
 
-      run_shell("#{get('CLTOOL_EXE')} -u#{login} -p#{password} #{script_path}")
+
+      puts "#{get('CLTOOL_EXE')} -u#{login} -p#{password} #{optional("-h",host)} #{script_path}"
+      #run_shell("#{get('CLTOOL_EXE')} -u#{login} -p#{password} #{optional("-h",host)} #{script_path}")
     end
 
     def run_clover_graph(graph, options={})
@@ -449,6 +452,9 @@ module Infra
       
       mail(:to => "clover@gooddata.pagerduty.com", :from => 'root@gooddata.com', :subject => "#{hostname}: #{customer} - #{project} ETL error", :body => "Error occured during #{step} step. Error: #{message}")
     end
+
+
+
 
   end
 end

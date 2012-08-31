@@ -75,6 +75,14 @@ module Infra
       return if @parameters.nil?
       @parameters[key.to_s]
     end
+
+    def optional(param,value)
+      if (!value.nil?) && (!value.empty?) then
+        return "#{param} #{value}"
+      else
+        return ""
+      end
+    end
     
     def set(key, value, options={})
       @parameters = {} if @parameters.nil?
