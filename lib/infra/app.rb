@@ -12,6 +12,7 @@ require 'timecop'
 require 'downloader'
 require 'salesforce'
 require 'psql_logger'
+require 'archiver'
 include FileUtils
 
 # This is here because of bugs in active_support + builder + xs
@@ -29,6 +30,7 @@ module Infra
   CHIPMUNK_ROOT           = TOOLS_ROOT + 'chipmunk'
   PROJECTS_TEMPLATE_ROOT  = CHIPMUNK_ROOT + 'template'
   PROJECTS_ROOT           = CHIPMUNK_ROOT + 'projects'
+  BACKUP_FILE             = 'backup'
 
   class App
 
@@ -355,6 +357,25 @@ module Infra
         @psql_error_sent = true
       end
     end
+
+    def backup
+      if File.exist?(BACKUP_FILE) then
+        pattern = Array.new
+        File.open("backup").each_line do |line|
+          pattern.push(line.strip)
+        end
+        bucket_name = "gooddata_com_#{get('CUSTOMER')}_#{get('PROJECT')}"
+        GDC::Archiver.archive({
+                   :source_dir          => get('PROJECT_DIR'),
+                   :store_to_s3         => true,
+                   :logger              => logger,
+                   :bucket_name         => bucket_name,
+                   :s3_credentials_file => "/mnt/ms/.s3cfg",
+                   :pattern             => pattern
+              })
+      end
+    end
+
     
     def run_steps(steps_to_run)
       fail "ETL is already runnning" if File.exist?('running.pid')
@@ -385,6 +406,8 @@ module Infra
               callback.call
             end
             log_to_psql("log_end")
+            backup
+
           end
         ensure
           FileUtils.rm_f('running.pid')
