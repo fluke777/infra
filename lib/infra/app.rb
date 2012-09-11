@@ -361,7 +361,7 @@ module Infra
     def backup
       if File.exist?(BACKUP_FILE) then
         pattern = Array.new
-        File.open("backup").each_line do |line|
+        File.open(BACKUP_FILE).each_line do |line|
           pattern.push(line.strip)
         end
         bucket_name = "gooddata_com_#{get('CUSTOMER')}_#{get('PROJECT')}"
