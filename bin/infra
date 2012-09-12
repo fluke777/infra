@@ -102,7 +102,7 @@ pre do |global,command,options,args|
     if !File.exist?(psql_config_file)
       APP.mail_to_pager_duty("Creating psql logger","Configuration file for psql logger #{psql_config_file} is missing.") if !File.exist?(psql_config_file)
     else
-      psini = IniFile.new(Pathname.new(psql_config_file).expand_path, :parameter => '=' )
+      psini = IniFile.new(nil, {:parameter => '=',:filename => Pathname.new(psql_config_file).expand_path } )
       psini = psini[:default]
       APP.psql_logger = GDC::PsqlLogger.new(psini["host"], psini["dbname"], psini["user"], psini["password"], "#{pid}")
     end
