@@ -387,6 +387,34 @@ module Infra
 
     end
 
+    def checkCSV(options = {})
+      pattern = options[:pattern] || nil
+      isOK = true
+
+
+      if (pattern.nil?) then
+          fail "Seems like you didn't specified pattern"
+      end
+      files = Dir.glob(pattern)
+      files.each do |file|
+          File.open(file, "r") do |f|
+              count = 0
+              f.each_line do |line|
+                  break unless (count <= 2)
+                  count = count + 1
+              end
+              if count <=1 then
+                isOK = false
+                logger.info "File #{file} is empty (or has only header)"
+              else
+                logger.info "File #{file} has more then one line"
+              end
+          end
+      end
+      return isOK
+    end
+
+
     def connect_to_gooddata(options={})
       login     = options[:login]
       password  = options[:password]
