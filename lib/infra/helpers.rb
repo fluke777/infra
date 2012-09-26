@@ -262,7 +262,7 @@ module Infra
 
     end
 
-    def sync_users_in_project_from_csv(file_name, options)
+    def sync_users_in_project_from_csv(file_name, options={})
       pid = options[:pid] || get('PID')
       domain = options[:domain] || get('GD_DOMAIN')
 
@@ -481,8 +481,25 @@ module Infra
       mail(:to => "clover@gooddata.pagerduty.com", :from => 'root@gooddata.com', :subject => "#{hostname}: #{customer} - #{project} ETL error", :body => "Error occured during #{step} step. Error: #{message}")
     end
 
+    def update_muf(options)
+      require 'variable_uploader'
 
+      datafile = options[:datafile]
+      config = options[:config]
+      id_field = options[:id_field]
+      pid = get('PID')
 
+      expanded_config = config.map do |trinity|
+        {
+          :attribute  => "/gdc/md/#{pid}/obj/#{trinity[:attribute]}",
+          :label_uri  => "/gdc/md/#{pid}/obj/#{trinity[:label_uri]}/elements",
+          :csv_header => trinity[:csv_header]
+        }
+      end
+      GoodData::VariableUploader::DSL::Project.update :login => get('LOGIN'), :pass => get('PASSWORD'), :pid => pid do
+        update_muf(:file => datafile, :config => expanded_config, :id_field => id_field)
+      end
+    end
 
   end
 end
