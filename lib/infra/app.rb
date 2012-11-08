@@ -95,7 +95,7 @@ module Infra
 
     def save(key, value)
       @saved_parameters = {} if @saved_parameters.nil?
-      @saved_parameters[key] = value
+      @saved_parameters[key.to_s] = value
       set(key, value)
     end
 
@@ -329,7 +329,7 @@ module Infra
         @saved_parameters = {} if @saved_parameters.nil?
         data[:params] && data[:params].each_pair do |key, val|
           set(key.to_s, val, :silent => true)
-          @saved_parameters[key] = val
+          @saved_parameters[key.to_s] = val
         end
 
         @error = data[:application][:error]
