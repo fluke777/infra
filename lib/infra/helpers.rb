@@ -113,10 +113,31 @@ module Infra
       graph_path = get('GRAPH_DIR') + graph
       fail ArgumentError.new("Graph #{graph_path} does not exist") unless File.exist?(graph_path)
       java_options = options[:java_options]
+      retry_attempts = options[:number_of_retries] || 1
       java_params = java_options.nil? ? "" : "- #{java_options}"
       clover_options = options[:clover]
       command = "set -a; source ./workspace.sh;#{get('CLOVER_EXE')} #{get('CLOVER_PARAMS')} #{graph_path} #{java_params}"
-      run_shell(command)
+
+      count = 1
+      finished = false
+      while (count <=  retry_attempts and !finished) do
+        begin
+            begin
+              logger.info "Executing retry attempt number: #{count}"
+              run_shell(command)
+              finished = true
+            rescue
+              if (count < retry_attempts ) then
+                logger.info "External command '#{command}' in retry attempt number:#{count} FAILED"
+              else
+                logger.error "External command '#{command}' FAILED"
+                fail "External step"
+              end
+            ensure
+              count = count + 1
+            end
+        end
+      end
     end
 
     def run_shell(command)
