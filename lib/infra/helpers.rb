@@ -299,7 +299,7 @@ module Infra
       GoodData.project = pid
       response = GoodData.post("/gdc/md/#{pid}/dml/manage", { 'manage' => { 'maql' => dml}})
       while (GoodData.get response['uri'])['taskState']['status'] != "OK"
-        sleep(20)
+        Kernel::sleep(20)
       end
     end
 
