@@ -283,6 +283,17 @@ module Infra
 
     end
 
+    def sync_users_in_project_from_csv_and_snapshot_file(file_name, snapshot_file_name,options={})
+      pid = options[:pid] || get('PID')
+      domain = options[:domain] || get('GD_DOMAIN')
+
+      fail "Please specify domain. Either as a :domain param in helper sync_domain_with_csv or as a GD_DOMAIN in your params.json" if domain.nil? || domain.empty?
+
+      connect_to_gooddata
+      Gd::Commands::sync_users_in_project_from_csv_and_snapshot_file(file_name,snapshot_file_name, pid, domain, options)
+    end
+
+
     def sync_users_in_project_from_csv(file_name, options={})
       pid = options[:pid] || get('PID')
       domain = options[:domain] || get('GD_DOMAIN')
@@ -292,6 +303,10 @@ module Infra
       connect_to_gooddata
       Gd::Commands::sync_users_in_project_from_csv(file_name, pid, domain, options)
     end
+
+
+
+
 
     def execute_dml(dml)
       pid = get('PID')
