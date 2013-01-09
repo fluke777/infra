@@ -94,7 +94,9 @@ pre do |global,command,options,args|
   })
 
   APP.instance_eval(File.read(project_root + app_file))
+  puts "Checking if this is production cluster"
   if APP.is_production
+    puts "IT IS!!!"
     APP.after_failure do
       APP.mail_to_pager_duty
     end
