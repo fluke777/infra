@@ -305,9 +305,6 @@ module Infra
     end
 
 
-
-
-
     def execute_dml(dml)
       pid = get('PID')
       connect_to_gooddata
