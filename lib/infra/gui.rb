@@ -30,7 +30,7 @@ module Infra
 
     def summary
       now = Time.now.to_i
-      duration = @app.last_successful_finish - @app.last_successful_start
+      duration = @app.last_successful_finish && @app.last_successful_start && @app.last_successful_finish - @app.last_successful_start
       table = Terminal::Table.new(:title => "Last Run Summary".bright) do |t|
         t << ["Finished Sucessfully", convert_value(!@app.error)]
         t << ["Started", "#{distance_of_time_in_words(now - @app.last_successful_start)} ago"]
