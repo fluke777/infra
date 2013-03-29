@@ -267,7 +267,7 @@ module Infra
       fail "Please specify sf password either as a parameter sf_password to helper sync_domain_with_sf or SFDC_PASSWORD param" if password.nil? || password.empty?
       
       connect_to_gooddata
-      Gd::Commands::create_users_from_sf(login, password, pid, domain)
+      Gd::Commands::create_users_from_sf(login, password, pid, domain, options)
     end
 
     def sync_users_in_project_from_sf(options={})
