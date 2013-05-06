@@ -424,12 +424,7 @@ module Infra
       rescue ArgumentError => e
         puts e.inspect.color(:red)
         puts e.backtrace
-        @error = true
-        @last_exception = e
-        throw e
-      rescue Interrupt => e
-        @error = true
-        @last_exception = e
+        fail e
       rescue SystemExit => e
         if e.status != 0
           @error = true

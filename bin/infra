@@ -79,6 +79,8 @@ pre do |global,command,options,args|
 
   pid = File.read(project_root + 'pid').chomp
 
+
+
   params = JSON.parse(File.read(project_root + params_file))
   params.merge!({"PID" => pid})
   params.merge!({"PROJECT_URI" => "/gdc/projects/#{pid}"})
@@ -102,9 +104,11 @@ pre do |global,command,options,args|
     if !File.exist?(psql_config_file)
       APP.mail_to_pager_duty("Creating psql logger","Configuration file for psql logger #{psql_config_file} is missing.") if !File.exist?(psql_config_file)
     else
+
+      mode = (params["mode"].nil? ? '' : params["mode"])
       psini = IniFile.new(Pathname.new(psql_config_file).expand_path, :parameter => '=' )
       psini = psini[:default]
-      APP.psql_logger = GDC::PsqlLogger.new(psini["host"], psini["dbname"], psini["user"], psini["password"], "#{pid}")
+      APP.psql_logger = GDC::PsqlLogger.new(psini["host"], psini["dbname"], psini["user"], psini["password"], "#{pid}",{:mode => params["mode"]})
     end
   end
   APP.initialize_params
