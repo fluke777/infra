@@ -168,12 +168,12 @@ module Infra
       end
     end
 
-    def download_validations
-      customer    = get('CUSTOMER')
-      project     = get('PROJECT')
-      pid         = get('PID')
-      sfdc_login  = get('SFDC_USERNAME')
-      sfdc_pass   = get('SFDC_PASSWORD')
+    def download_validations(options = nil)
+      customer    = options[:customer] ||get('CUSTOMER')
+      project     = options[:project] || get('PROJECT')
+      pid         = options[:pid] || get('PID')
+      sfdc_login  = options[:sfdc_login] || get('SFDC_USERNAME')
+      sfdc_pass   = options[:sfdc_pass] || get('SFDC_PASSWORD')
       
       fail "SFDC password is not defined" if sfdc_pass.nil?
       fail "SFDC login is not defined" if sfdc_login.nil?
