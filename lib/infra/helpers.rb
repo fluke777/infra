@@ -168,7 +168,7 @@ module Infra
       end
     end
 
-    def download_validations(options = nil)
+    def download_validations(options = {})
       customer    = options[:customer] ||get('CUSTOMER')
       project     = options[:project] || get('PROJECT')
       pid         = options[:pid] || get('PID')
@@ -205,8 +205,8 @@ module Infra
       customer    = get('CUSTOMER')
       project     = get('PROJECT')
       pid         = get('PID')
-      sfdc_login  = get('SFDC_USERNAME')
-      sfdc_pass   = get('SFDC_PASSWORD')
+      sfdc_login  = options[:sfdc_login] || get('SFDC_USERNAME')
+      sfdc_pass   = options[:sfdc_pass] || get('SFDC_PASSWORD')
       email_from  = options[:email_from] || "sf-validations@gooddata.com"
       email_to    = options[:email_to] || "ps-etl+clover@gooddata.com"
       
