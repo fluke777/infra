@@ -457,8 +457,9 @@ module Infra
 
       login = login || get('LOGIN')
       password = password || get('PASSWORD')
+      url = get("GOODDATA_URL") || nil
       begin
-        GoodData.connect(login, password, nil, {
+        GoodData.connect(login, password, url, {
           :timeout => 0
         })
         GoodData.connection.connect!
