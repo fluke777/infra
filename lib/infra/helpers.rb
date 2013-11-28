@@ -278,7 +278,7 @@ module Infra
 
       fail "Please specify domain. Either as a :domain param in helper sync_domain_with_csv or as a GD_DOMAIN in your params.json" if domain.nil? || domain.empty?
 
-      connect_to_gooddata
+      connect_to_gooddata(options)
       Gd::Commands::sync_users_in_project_from_sf(login, password, pid, domain, options)
 
     end
